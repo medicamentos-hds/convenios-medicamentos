@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Convenios de Medicamentos</title>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div id="pantalla-login" class="login-pantalla">
+    <form id="form-login" class="login-form">
+      <img src="assets/logo-hds.jpg" alt="Logo HDS" class="logo-login">
+      <h2>Iniciar sesión</h2>
+      <label>Usuario
+        <input type="text" id="login-usuario" autocomplete="username" required>
+      </label>
+      <label>Contraseña
+        <input type="password" id="login-password" autocomplete="current-password" required>
+      </label>
+      <button type="submit">Ingresar</button>
+      <p id="login-mensaje" class="mensaje"></p>
+    </form>
+  </div>
+
+  <div id="app" class="oculto">
+    <header>
+      <div class="header-top">
+        <h1>Convenios de Medicamentos</h1>
+        <div class="header-acciones">
+          <img src="assets/logo-hds.jpg" alt="Logo HDS" class="logo-header">
+          <button type="button" id="btn-logout" class="logout-btn">Cerrar sesión</button>
+        </div>
+      </div>
+      <nav class="tabs">
+        <button class="tab-btn active" data-tab="buscar">Buscar</button>
+        <button class="tab-btn" data-tab="ingresar-medicamento">Ingresar Medicamento</button>
+        <button class="tab-btn" data-tab="ingresar-convenio-act">Ingresar Convenio Vigente</button>
+        <button class="tab-btn" data-tab="ingresar-convenio-nuevo">Ingresar Convenio Nuevo</button>
+      </nav>
+    </header>
+
+  <main>
+    <!-- BUSCAR -->
+    <section id="buscar" class="tab-panel active">
+      <h2>Buscar medicamento</h2>
+      <form id="form-buscar" class="inline-form">
+        <input type="text" id="buscar-texto" placeholder="Nombre o código del medicamento...">
+        <input type="text" id="buscar-convenio" placeholder="ID convenio (vigente o nuevo)...">
+        <button type="submit">Buscar</button>
+        <button type="button" id="btn-limpiar">Limpiar</button>
+      </form>
+      <div class="fila-buscar-acciones">
+        <p id="buscar-mensaje" class="mensaje"></p>
+        <button type="button" id="btn-descargar-pdf" class="btn-pdf oculto">Descargar resultados en PDF</button>
+      </div>
+      <div id="resultados"></div>
+    </section>
+
+    <!-- INGRESAR MEDICAMENTO -->
+    <section id="ingresar-medicamento" class="tab-panel">
+      <h2>Ingresar medicamento</h2>
+      <form id="form-medicamento" class="data-form">
+        <label>Nombre medicamento
+          <input type="text" name="nombre_med" required>
+        </label>
+        <label>Código medicamento
+          <input type="text" inputmode="numeric" class="solo-digitos" name="codigo_med">
+        </label>
+        <label><span id="label-consumo-ant-2">Consumo año anterior 2</span>
+          <input type="text" inputmode="numeric" class="miles" name="consumo_ant_2">
+        </label>
+        <label><span id="label-consumo-ant-1">Consumo año anterior 1</span>
+          <input type="text" inputmode="numeric" class="miles" name="consumo_ant_1">
+        </label>
+        <label><span id="label-consumo-actual">Consumo actual</span>
+          <input type="text" inputmode="numeric" class="miles" name="consumo_actual">
+        </label>
+        <label>Promedio reposición
+          <input type="text" inputmode="numeric" class="miles" name="prom_repo">
+        </label>
+        <label>Consumo proyectado
+          <input type="text" inputmode="numeric" class="miles" name="consumo_proy" id="input-consumo-proy" readonly>
+        </label>
+        <label class="campo-completo">Observaciones
+          <textarea name="observaciones" rows="3"></textarea>
+        </label>
+        <button type="submit">Guardar medicamento</button>
+      </form>
+      <p id="medicamento-mensaje" class="mensaje"></p>
+    </section>
+
+    <!-- INGRESAR CONVENIO ACTUAL -->
+    <section id="ingresar-convenio-act" class="tab-panel">
+      <h2>Ingresar convenio vigente</h2>
+      <form id="form-convenio-act" class="data-form" data-tabla="convenio_act">
+        <label>Medicamento
+          <select name="id_medicamento" required></select>
+        </label>
+        <label>ID convenio
+          <input type="text" name="id_convenio">
+        </label>
+        <label>Proveedor
+          <select name="id_proveedor" class="select-proveedor"></select>
+        </label>
+        <label class="campo-nuevo-proveedor oculto">Nombre nuevo proveedor
+          <input type="text" class="input-nuevo-proveedor">
+        </label>
+        <label>Cantidad
+          <input type="text" inputmode="numeric" class="miles" name="cantidad">
+        </label>
+        <label>Precio unitario neto
+          <span class="campo-moneda">
+            <span class="simbolo-moneda">$</span>
+            <input type="text" inputmode="numeric" class="miles" name="precio_unit_neto">
+          </span>
+        </label>
+        <label>Duración (meses)
+          <input type="text" inputmode="numeric" class="miles" name="duracion_meses">
+        </label>
+        <label>Precio total convenio
+          <span class="campo-moneda">
+            <span class="simbolo-moneda">$</span>
+            <input type="text" inputmode="numeric" class="miles" name="precio_total_conv" readonly>
+          </span>
+        </label>
+        <label>Precio anual convenio
+          <span class="campo-moneda">
+            <span class="simbolo-moneda">$</span>
+            <input type="text" inputmode="numeric" class="miles" name="precio_anual_conv" readonly>
+          </span>
+        </label>
+        <button type="submit">Guardar convenio vigente</button>
+      </form>
+      <p id="convenio-act-mensaje" class="mensaje"></p>
+    </section>
+
+    <!-- INGRESAR CONVENIO NUEVO -->
+    <section id="ingresar-convenio-nuevo" class="tab-panel">
+      <h2>Ingresar convenio nuevo</h2>
+      <form id="form-convenio-nuevo" class="data-form" data-tabla="convenio_nuevo">
+        <label>Medicamento
+          <select name="id_medicamento" required></select>
+        </label>
+        <label>ID convenio
+          <input type="text" name="id_convenio">
+        </label>
+        <label>Proveedor
+          <select name="id_proveedor" class="select-proveedor"></select>
+        </label>
+        <label class="campo-nuevo-proveedor oculto">Nombre nuevo proveedor
+          <input type="text" class="input-nuevo-proveedor">
+        </label>
+        <label>Cantidad
+          <input type="text" inputmode="numeric" class="miles" name="cantidad">
+        </label>
+        <label>Precio unitario neto
+          <span class="campo-moneda">
+            <span class="simbolo-moneda">$</span>
+            <input type="text" inputmode="numeric" class="miles" name="precio_unit_neto">
+          </span>
+        </label>
+        <label>Duración (meses)
+          <input type="text" inputmode="numeric" class="miles" name="duracion_meses">
+        </label>
+        <label>Precio total convenio
+          <span class="campo-moneda">
+            <span class="simbolo-moneda">$</span>
+            <input type="text" inputmode="numeric" class="miles" name="precio_total_conv" readonly>
+          </span>
+        </label>
+        <label>Precio anual convenio
+          <span class="campo-moneda">
+            <span class="simbolo-moneda">$</span>
+            <input type="text" inputmode="numeric" class="miles" name="precio_anual_conv" readonly>
+          </span>
+        </label>
+        <button type="submit">Guardar convenio nuevo</button>
+      </form>
+      <p id="convenio-nuevo-mensaje" class="mensaje"></p>
+    </section>
+  </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabaseClient.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/auth.js"></script>
+</body>
+</html>
