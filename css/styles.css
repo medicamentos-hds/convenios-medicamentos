@@ -1,0 +1,304 @@
+:root {
+  --color-primary: #1d5c63;
+  --color-primary-dark: #133a3f;
+  --color-bg: #f4f6f5;
+  --color-border: #d9e0de;
+  --color-error: #b3261e;
+  --color-ok: #1d6b3e;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  background: var(--color-bg);
+  color: #1c1c1c;
+}
+
+header {
+  background: var(--color-primary);
+  color: white;
+  padding: 1rem 1.5rem;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+}
+
+.header-acciones {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.logo-header {
+  height: 48px;
+  width: auto;
+  border-radius: 4px;
+}
+
+.logout-btn {
+  background: #888;
+}
+
+.login-pantalla {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-bg);
+}
+
+.login-form {
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  text-align: center;
+}
+
+.login-form h2 {
+  margin: 0 0 0.25rem;
+  color: var(--color-primary-dark);
+}
+
+.logo-login {
+  height: 64px;
+  width: auto;
+  align-self: center;
+  border-radius: 4px;
+}
+
+.login-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  text-align: left;
+  font-size: 0.85rem;
+}
+
+.login-form input {
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tab-btn {
+  background: var(--color-primary-dark);
+  color: white;
+  border: none;
+  padding: 0.5rem 0.9rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.tab-btn.active {
+  background: white;
+  color: var(--color-primary-dark);
+  font-weight: 600;
+}
+
+main {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+.inline-form {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.inline-form input[type="text"] {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+}
+
+button {
+  background: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--color-primary-dark);
+}
+
+#btn-limpiar {
+  background: #888;
+}
+
+.data-form {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.9rem;
+}
+
+.data-form label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  gap: 0.3rem;
+}
+
+.data-form input,
+.data-form select,
+.data-form textarea {
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.campo-completo {
+  grid-column: 1 / -1;
+}
+
+.data-form button {
+  grid-column: 1 / -1;
+  justify-self: start;
+}
+
+.campo-moneda {
+  position: relative;
+  display: block;
+}
+
+.campo-moneda .simbolo-moneda {
+  position: absolute;
+  left: 0.6rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #555;
+  pointer-events: none;
+}
+
+.campo-moneda input {
+  width: 100%;
+  padding-left: 1.6rem;
+}
+
+.oculto {
+  display: none !important;
+}
+
+.tabla-analisis {
+  margin: 0.75rem 0;
+}
+
+.tabla-analisis th {
+  background: #e3e6e5;
+  white-space: nowrap;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.tabla-analisis td {
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+.mensaje {
+  min-height: 1.2rem;
+  font-size: 0.9rem;
+}
+
+.mensaje.error {
+  color: var(--color-error);
+}
+
+.mensaje.ok {
+  color: var(--color-ok);
+}
+
+.fila-buscar-acciones {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 1rem;
+}
+
+.btn-pdf {
+  margin-bottom: 1rem;
+  background: #8a1c1c;
+}
+
+.card {
+  background: white;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.card h3 {
+  margin: 0 0 0.5rem;
+  color: var(--color-primary-dark);
+}
+
+.card table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.card table caption {
+  text-align: left;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
+}
+
+.card th, .card td {
+  border: 1px solid var(--color-border);
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+}
+
+@media (max-width: 600px) {
+  .data-form {
+    grid-template-columns: 1fr;
+  }
+}
