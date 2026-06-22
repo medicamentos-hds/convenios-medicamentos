@@ -228,9 +228,10 @@ async function cargarListaProveedores() {
   card.className = 'card';
   card.innerHTML = `
     <table>
+      <h3>Listado de Proveedores</h3>
       <tr>
-        <th>Nombre Proveedor</th>
-        <th></th>
+        <th>Nombre</th>
+        <th>Acción</th>
       </tr>
       ${data.map((prov) => `
         <tr>

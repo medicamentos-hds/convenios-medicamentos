@@ -6,10 +6,21 @@ const formLogin = document.getElementById('form-login');
 const inputUsuario = document.getElementById('login-usuario');
 const inputPassword = document.getElementById('login-password');
 const btnLogout = document.getElementById('btn-logout');
+const bienvenidaUsuario = document.getElementById('bienvenida-usuario');
+const relojActual = document.getElementById('reloj-actual');
 
-function mostrarApp() {
+function actualizarReloj() {
+  relojActual.textContent = new Date().toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  relojActual.textContent = relojActual.textContent + " " + new Date().toLocaleTimeString('es-CL',  { hour: '2-digit', minute: '2-digit' });
+}
+
+setInterval(actualizarReloj, 1000);
+actualizarReloj();
+
+function mostrarApp(nombre) {
   pantallaLogin.classList.add('oculto');
   appEl.classList.remove('oculto');
+  bienvenidaUsuario.textContent = `Bienvenido/a, ${nombre}`;
   cargarSelectsMedicamento();
   cargarSelectsProveedor();
   cargarListaProveedores();

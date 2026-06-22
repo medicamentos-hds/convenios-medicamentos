@@ -18,20 +18,26 @@
         <input type="password" id="login-password" autocomplete="current-password" required>
       </label>
       <button type="submit">Ingresar</button>
-      <p id="login-mensaje" class="mensaje"></p>
+      <p id="login-mensaje" class="mensaje-login"></p>
     </form>
   </div>
 
   <div id="app" class="oculto">
     <header>
       <div class="header-top">
-        <h1>Convenios de Medicamentos</h1>
+        <img src="assets/logo-web-300x86.png" alt="Logo HDS" class="logo-header">
+        <h1 >Convenios de Medicamentos</h1>
         <div class="header-acciones">
-          <img src="assets/logo-web-300x86.png" alt="Logo HDS" class="logo-header">
-          <button type="button" id="btn-logout" class="logout-btn">Cerrar sesión</button>
+          <div class="info-usuario">
+            <p id="bienvenida-usuario" class="bienvenida"></p>
+            <p id="reloj-actual" class="reloj"></p>
+            <a href="#" id="btn-logout" class="logout-link">Cerrar sesión</a>
+          </div>
         </div>
       </div>
-      <nav class="tabs">
+    </header>
+    <header style="background-color: #00A1E1; padding: 1rem; border-bottom: 1px solid #ccc; justify-content: center;">
+      <nav class="tabs" style="justify-content: center;">
         <button class="tab-btn active" data-tab="buscar">Búsqueda</button>
         <button class="tab-btn" data-tab="ingresar-medicamento">Ingresar Consumo Medicamento</button>
         <button class="tab-btn" data-tab="ingresar-convenio-act">Ingresar Convenio Vigente</button>
@@ -213,7 +219,7 @@
       </form>
       <p id="nuevo-proveedor-mensaje" class="mensaje"></p>
       <p id="proveedores-mensaje" class="mensaje"></p>
-      <div id="lista-proveedores"></div>
+      <div id="lista-proveedores">Proveedores</div>
     </section>
   </main>
   </div>
@@ -275,7 +281,7 @@
 
   <div id="modal-editar-proveedor" class="modal-overlay oculto">
     <div class="modal-contenido">
-      <h3>Editar Proveedor</h3>
+      <h3>Editar Datos del Proveedor</h3>
       <form id="form-editar-proveedor" class="data-form">
         <input type="hidden" name="id">
         <label class="campo-completo">Nombre Proveedor

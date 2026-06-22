@@ -32,6 +32,10 @@ header {
   margin-bottom: 0.75rem;
 }
 
+.header-separador {
+  background: white;
+}
+
 header h1 {
   margin: 0;
   font-size: 1.4rem;
@@ -51,6 +55,37 @@ header h1 {
 
 .logout-btn {
   background: #888;
+}
+
+.info-usuario {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.1rem;
+  text-align: right;
+}
+
+.bienvenida {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.reloj {
+  margin: 0;
+  font-size: 0.8rem;
+  color: #cfd6d4;
+}
+
+.logout-link {
+  color: white;
+  text-decoration: underline;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.logout-link:hover {
+  color: #cfd6d4;
 }
 
 .login-pantalla {
@@ -278,7 +313,18 @@ button:hover {
   font-size: 0.9rem;
 }
 
-.mensaje.error {
+.mensaje-login {
+  color: white;
+  min-height: 1.2rem;
+  font-size: 0.9rem;
+}
+
+.mensaje-login.error{
+   color: rgb(255, 118, 118);
+}
+
+.mensaje.error 
+.mensaje-login.error{
   color: var(--color-error);
 }
 
