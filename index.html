@@ -105,7 +105,7 @@
     <section id="ingresar-convenio-act" class="tab-panel">
       <h2>Ingresar Convenio Vigente</h2>
       <form id="form-convenio-act" class="data-form" data-tabla="convenio_act">
-        <label>Medicamento
+        <label class="campo-completo">Medicamento
           <select name="id_medicamento" required></select>
         </label>
         <label>ID Convenio
@@ -153,7 +153,7 @@
     <section id="ingresar-convenio-nuevo" class="tab-panel">
       <h2>Ingresar Convenio Nuevo</h2>
       <form id="form-convenio-nuevo" class="data-form" data-tabla="convenio_nuevo">
-        <label>Medicamento
+        <label class="campo-completo">Medicamento
           <select name="id_medicamento" required></select>
         </label>
         <label>ID Convenio
@@ -210,6 +210,12 @@
         <label><span id="label-editar-consumo-ant-1">Consumo Año Anterior 1</span>
           <input type="text" inputmode="numeric" class="miles" name="consumo_ant_1">
         </label>
+        <label><span id="label-editar-consumo-actual">Consumo Año Actual</span>
+          <input type="text" inputmode="numeric" class="miles" name="consumo_actual">
+        </label>
+        <label>Promedio Reposición (últimos 3 meses)
+          <input type="text" inputmode="numeric" class="miles" name="prom_repo">
+        </label>
         <label class="campo-completo">Observaciones
           <textarea name="observaciones" rows="3"></textarea>
         </label>
@@ -219,6 +225,32 @@
         </div>
       </form>
       <p id="editar-medicamento-mensaje" class="mensaje"></p>
+    </div>
+  </div>
+
+  <div id="modal-editar-convenio" class="modal-overlay oculto">
+    <div class="modal-contenido">
+      <h3>Editar Convenio</h3>
+      <form id="form-editar-convenio" class="data-form">
+        <input type="hidden" name="id">
+        <label>Cantidad
+          <input type="text" inputmode="numeric" class="miles" name="cantidad">
+        </label>
+        <label>Precio Unitario Neto
+          <span class="campo-moneda">
+            <span class="simbolo-moneda">$</span>
+            <input type="text" inputmode="numeric" class="miles" name="precio_unit_neto">
+          </span>
+        </label>
+        <label>Duración (meses)
+          <input type="text" inputmode="numeric" class="miles" name="duracion_meses">
+        </label>
+        <div class="modal-acciones">
+          <button type="button" id="btn-cancelar-editar-convenio">Cancelar</button>
+          <button type="submit">Guardar Cambios</button>
+        </div>
+      </form>
+      <p id="editar-convenio-mensaje" class="mensaje"></p>
     </div>
   </div>
 
