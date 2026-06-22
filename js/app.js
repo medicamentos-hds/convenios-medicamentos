@@ -85,29 +85,48 @@ document.querySelectorAll('input.solo-digitos').forEach((input) => {
 });
 
 // --- Selects de medicamento (para formularios de convenio) ---
+// Cada formulario solo debe ofrecer medicamentos que aún no tengan un
+// convenio asociado en esa misma tabla (act o nuevo).
 async function cargarSelectsMedicamento() {
-  const { data, error } = await supabaseClient
-    .from('medicamento')
-    .select('id, nombre_med, codigo_med')
-    .order('nombre_med', { ascending: true });
+  const [medsRes, actRes, nuevoRes] = await Promise.all([
+    supabaseClient.from('medicamento').select('id, nombre_med, codigo_med').order('nombre_med', { ascending: true }),
+    supabaseClient.from('convenio_act').select('id_medicamento'),
+    supabaseClient.from('convenio_nuevo').select('id_medicamento'),
+  ]);
 
-  if (error) {
-    console.error(error);
+  if (medsRes.error) {
+    console.error(medsRes.error);
     return;
   }
 
-  const selects = document.querySelectorAll('select[name="id_medicamento"]');
-  selects.forEach((select) => {
+  const idsConvenioAct = new Set((actRes.data ?? []).map((c) => c.id_medicamento));
+  const idsConvenioNuevo = new Set((nuevoRes.data ?? []).map((c) => c.id_medicamento));
+
+  const poblarSelect = (select, idsExcluir) => {
+    const valorPrevio = select.value;
     select.innerHTML = '<option value="">Selecciona un medicamento...</option>';
-    data.forEach((med) => {
-      const option = document.createElement('option');
-      option.value = med.id;
-      option.textContent = med.codigo_med
-        ? `${med.nombre_med} (cod. ${med.codigo_med})`
-        : med.nombre_med;
-      select.appendChild(option);
-    });
-  });
+    medsRes.data
+      .filter((med) => !idsExcluir.has(med.id))
+      .forEach((med) => {
+        const option = document.createElement('option');
+        option.value = med.id;
+        option.textContent = med.codigo_med
+          ? `${med.nombre_med} (cod. ${med.codigo_med})`
+          : med.nombre_med;
+        select.appendChild(option);
+      });
+
+    if ([...select.options].some((o) => o.value === valorPrevio)) {
+      select.value = valorPrevio;
+    }
+  };
+
+  document
+    .querySelectorAll('#form-convenio-act select[name="id_medicamento"]')
+    .forEach((select) => poblarSelect(select, idsConvenioAct));
+  document
+    .querySelectorAll('#form-convenio-nuevo select[name="id_medicamento"]')
+    .forEach((select) => poblarSelect(select, idsConvenioNuevo));
 }
 
 // --- Selects de proveedor (para formularios de convenio) ---
@@ -150,9 +169,12 @@ function configurarSelectorProveedor(form) {
   const campoNuevo = form.querySelector('.campo-nuevo-proveedor');
   const inputNuevo = form.querySelector('.input-nuevo-proveedor');
 
+  inputNuevo.required = false;
+
   select.addEventListener('change', () => {
     const esNuevo = select.value === VALOR_NUEVO_PROVEEDOR;
     campoNuevo.classList.toggle('oculto', !esNuevo);
+    inputNuevo.required = esNuevo;
     if (!esNuevo) inputNuevo.value = '';
   });
 }
@@ -316,21 +338,21 @@ async function construirCardMedicamento(med) {
       <h3>${med.nombre_med}${med.fecha_actual ? ` (${med.fecha_actual.slice(0, 4)})` : ''}</h3>
       <button type="button" class="btn-editar-medicamento">Editar</button>
     </div>
-    <table>
+    <table class="tabla-consumo">
       <tr>
         <th>Código</th>
         <th>Consumo Actual (${obtenerMesAnio(med.fecha_actual)})</th>
-        <th>Consumo Proyectado</th>
         <th>Promedio Reposición</th>
+        <th>Consumo Proyectado</th>
       </tr>
       <tr>
         <td>${med.codigo_med ?? '-'}</td>
         <td>${formatearNumero(med.consumo_actual)}</td>
-        <td>${formatearNumero(med.consumo_proy)}</td>
         <td>${formatearNumero(med.prom_repo)}</td>
+        <td>${formatearNumero(med.consumo_proy)}</td>
       </tr>
     </table>
-    <table>
+    <table class="tabla-consumo">
       <tr>
         <th>Consumo Año ${med.anio_ant_2 ?? '-'}</th>
         <th>Consumo Año ${med.anio_ant_1 ?? '-'}</th>
@@ -342,10 +364,23 @@ async function construirCardMedicamento(med) {
     </table>
     ${construirAnalisis(med)}
     ${construirTablaComparativaConvenios(actRes.data?.[0], nuevoRes.data?.[0])}
-    <p><strong>Observaciones:</strong> ${med.observaciones || '-'}</p>
+    <table class="tabla-consumo">
+      <tr>
+        <th>Observaciones</th>
+      </tr>
+      <tr>
+        <td>${med.observaciones || '-'}</td>
+      </tr>
+    </table> 
   `;
 
   card.querySelector('.btn-editar-medicamento').addEventListener('click', () => abrirModalEditar(med));
+
+  card.querySelectorAll('.btn-editar-convenio').forEach((btn) => {
+    const tabla = btn.dataset.tabla;
+    const convenio = tabla === 'convenio_act' ? actRes.data?.[0] : nuevoRes.data?.[0];
+    btn.addEventListener('click', () => abrirModalEditarConvenio(tabla, convenio));
+  });
 
   return card;
 }
@@ -358,9 +393,13 @@ function abrirModalEditar(med) {
   formEditarMedicamento.elements['id'].value = med.id;
   formEditarMedicamento.elements['consumo_ant_2'].value = formatoMiles(String(med.consumo_ant_2 ?? 0));
   formEditarMedicamento.elements['consumo_ant_1'].value = formatoMiles(String(med.consumo_ant_1 ?? 0));
+  formEditarMedicamento.elements['consumo_actual'].value = formatoMiles(String(med.consumo_actual ?? 0));
+  formEditarMedicamento.elements['prom_repo'].value = formatoMiles(String(med.prom_repo ?? 0));
   formEditarMedicamento.elements['observaciones'].value = med.observaciones || '';
   document.getElementById('label-editar-consumo-ant-2').textContent = `Consumo Año ${med.anio_ant_2 ?? '-'}`;
   document.getElementById('label-editar-consumo-ant-1').textContent = `Consumo Año ${med.anio_ant_1 ?? '-'}`;
+  document.getElementById('label-editar-consumo-actual').textContent =
+    `Consumo Actual (${nombreMesActual} ${anioActual})`;
   mostrarMensaje('editar-medicamento-mensaje', '');
   modalEditar.classList.remove('oculto');
 }
@@ -375,9 +414,13 @@ formEditarMedicamento.addEventListener('submit', async (e) => {
   e.preventDefault();
   const formData = new FormData(formEditarMedicamento);
   const id = formData.get('id');
+  const consumoActual = Number(soloDigitos(formData.get('consumo_actual'))) || 0;
   const payload = {
     consumo_ant_2: Number(soloDigitos(formData.get('consumo_ant_2'))) || 0,
     consumo_ant_1: Number(soloDigitos(formData.get('consumo_ant_1'))) || 0,
+    consumo_actual: consumoActual,
+    consumo_proy: consumoActual ? Math.round((consumoActual / mesActualNumero) * 12) : 0,
+    prom_repo: Number(soloDigitos(formData.get('prom_repo'))) || 0,
     observaciones: formData.get('observaciones'),
   };
 
@@ -389,6 +432,56 @@ formEditarMedicamento.addEventListener('submit', async (e) => {
   }
 
   cerrarModalEditar();
+  formBuscar.requestSubmit();
+});
+
+// --- Editar convenio (cantidad, precio unitario neto, duración) ---
+const modalEditarConvenio = document.getElementById('modal-editar-convenio');
+const formEditarConvenio = document.getElementById('form-editar-convenio');
+
+function abrirModalEditarConvenio(tabla, convenio) {
+  if (!convenio) return;
+  formEditarConvenio.dataset.tabla = tabla;
+  formEditarConvenio.elements['id'].value = convenio.id;
+  formEditarConvenio.elements['cantidad'].value = formatoMiles(String(convenio.cantidad ?? 0));
+  formEditarConvenio.elements['precio_unit_neto'].value = formatoMiles(String(convenio.precio_unit_neto ?? 0));
+  formEditarConvenio.elements['duracion_meses'].value = formatoMiles(String(convenio.duracion_meses ?? 0));
+  mostrarMensaje('editar-convenio-mensaje', '');
+  modalEditarConvenio.classList.remove('oculto');
+}
+
+function cerrarModalEditarConvenio() {
+  modalEditarConvenio.classList.add('oculto');
+}
+
+document.getElementById('btn-cancelar-editar-convenio').addEventListener('click', cerrarModalEditarConvenio);
+
+formEditarConvenio.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const formData = new FormData(formEditarConvenio);
+  const id = formData.get('id');
+  const tabla = formEditarConvenio.dataset.tabla;
+  const cantidad = Number(soloDigitos(formData.get('cantidad'))) || 0;
+  const precioUnitNeto = Number(soloDigitos(formData.get('precio_unit_neto'))) || 0;
+  const duracionMeses = Number(soloDigitos(formData.get('duracion_meses'))) || 0;
+  const precioTotal = cantidad && precioUnitNeto ? Math.round(cantidad * precioUnitNeto * 1.19) : 0;
+  const precioAnual = precioTotal && duracionMeses ? Math.round(precioTotal / (duracionMeses / 12)) : 0;
+  const payload = {
+    cantidad,
+    precio_unit_neto: precioUnitNeto,
+    duracion_meses: duracionMeses,
+    precio_total_conv: precioTotal,
+    precio_anual_conv: precioAnual,
+  };
+
+  const { error } = await supabaseClient.from(tabla).update(payload).eq('id', id);
+
+  if (error) {
+    mostrarMensaje('editar-convenio-mensaje', `Error: ${error.message}`, 'error');
+    return;
+  }
+
+  cerrarModalEditarConvenio();
   formBuscar.requestSubmit();
 });
 
@@ -407,8 +500,8 @@ function construirTablaComparativaConvenios(actual, nuevo) {
     <table class="tabla-convenios">
       <tr>
         <th></th>
-        <th>CONVENIO ACTUAL</th>
-        <th>CONVENIO NUEVO</th>
+        <th>CONVENIO ACTUAL${actual ? ' <button type="button" class="btn-editar-convenio" data-tabla="convenio_act">Editar</button>' : ''}</th>
+        <th>CONVENIO NUEVO${nuevo ? ' <button type="button" class="btn-editar-convenio" data-tabla="convenio_nuevo">Editar</button>' : ''}</th>
       </tr>
       ${fila('ID CONVENIO', actual?.id_convenio ?? '-', nuevo?.id_convenio ?? '-')}
       ${fila('PROVEEDOR ADJUDICADO', actual?.proveedor?.nombre_proveedor ?? '-', nuevo?.proveedor?.nombre_proveedor ?? '-')}
@@ -453,6 +546,7 @@ formMedicamento.addEventListener('submit', async (e) => {
   payload.anio_ant_1 = anioAnt1;
   payload.anio_ant_2 = anioAnt2;
   payload.fecha_actual = new Date().toISOString().slice(0, 10);
+  payload.consumo_proy = Number(soloDigitos(inputConsumoProy.value)) || 0;
 
   const { error } = await supabaseClient.from('medicamento').insert(payload);
 
@@ -510,6 +604,8 @@ function configurarFormularioConvenio(formId, mensajeId, tabla) {
     const formData = new FormData(form);
     const payload = formDataANumeros(formData, ['id_convenio']);
     payload.id_medicamento = Number(payload.id_medicamento);
+    payload.precio_total_conv = Number(soloDigitos(inputPrecioTotal.value)) || 0;
+    payload.precio_anual_conv = Number(soloDigitos(inputPrecioAnual.value)) || 0;
 
     if (!payload.id_medicamento) {
       mostrarMensaje(mensajeId, 'Selecciona un medicamento.', 'error');
@@ -550,11 +646,14 @@ function configurarFormularioConvenio(formId, mensajeId, tabla) {
     mostrarMensaje(mensajeId, 'Convenio guardado correctamente.', 'ok');
     form.reset();
     form.querySelector('.campo-nuevo-proveedor').classList.add('oculto');
+    inputNuevoProveedor.required = false;
+    await cargarSelectsMedicamento();
   });
 
   form.querySelector('.btn-limpiar-convenio').addEventListener('click', () => {
     form.reset();
     form.querySelector('.campo-nuevo-proveedor').classList.add('oculto');
+    inputNuevoProveedor.required = false;
     mostrarMensaje(mensajeId, '');
   });
 }
