@@ -317,9 +317,22 @@ function obtenerRangoFecha(anio) {
   return { inicio, fin };
 }
 
+const modalProcesandoPdf = document.getElementById('modal-procesando-pdf');
+
 btnDescargarPdf.addEventListener('click', async () => {
   btnDescargarPdf.disabled = true;
   mostrarMensaje('buscar-mensaje', 'Generando PDF...');
+  modalProcesandoPdf.classList.remove('oculto');
+
+  const detallesOcultos = [...resultadosDiv.querySelectorAll('.card-detalle.oculto')];
+  detallesOcultos.forEach((detalle) => {
+    detalle.classList.remove('oculto');
+    const btnVerDetalle = detalle.previousElementSibling?.querySelector('.btn-ver-detalle-medicamento');
+    if (btnVerDetalle) {
+      btnVerDetalle.classList.add('icon-collapse-abierto');
+      btnVerDetalle.setAttribute('aria-expanded', 'true');
+    }
+  });
 
   try {
     const canvas = await html2canvas(resultadosDiv, { scale: 2, useCORS: true });
@@ -348,6 +361,15 @@ btnDescargarPdf.addEventListener('click', async () => {
   } catch (error) {
     mostrarMensaje('buscar-mensaje', `Error al generar el PDF: ${error.message}`, 'error');
   } finally {
+    detallesOcultos.forEach((detalle) => {
+      detalle.classList.add('oculto');
+      const btnVerDetalle = detalle.previousElementSibling?.querySelector('.btn-ver-detalle-medicamento');
+      if (btnVerDetalle) {
+        btnVerDetalle.classList.remove('icon-collapse-abierto');
+        btnVerDetalle.setAttribute('aria-expanded', 'false');
+      }
+    });
+    modalProcesandoPdf.classList.add('oculto');
     btnDescargarPdf.disabled = false;
   }
 });
@@ -442,6 +464,7 @@ async function construirCardMedicamento(med) {
   card.className = 'card';
 
   card.innerHTML = `
+    <button type="button" class="btn-ver-detalle-medicamento icon-collapse" title="Ver detalle" aria-expanded="false">▾</button>
     <div class="card-header">
       <h3>${med.nombre_med}${med.fecha_actual ? ` (${med.fecha_actual.slice(0, 4)})` : ''}</h3>
       <div class="card-header-acciones">
@@ -449,41 +472,52 @@ async function construirCardMedicamento(med) {
         <button type="button" class="btn-eliminar-medicamento">Eliminar</button>
       </div>
     </div>
-    <table class="tabla-consumo">
-      <tr>
-        <th>Código</th>
-        <th>Consumo Actual (${obtenerMesAnio(med.fecha_actual)})</th>
-        <th>Promedio Reposición</th>
-        <th>Consumo Proyectado</th>
-      </tr>
-      <tr>
-        <td>${med.codigo_med ?? '-'}</td>
-        <td>${formatearNumero(med.consumo_actual)}</td>
-        <td>${formatearNumero(med.prom_repo)}</td>
-        <td>${formatearNumero(med.consumo_proy)}</td>
-      </tr>
-    </table>
-    <table class="tabla-consumo">
-      <tr>
-        <th>Consumo Año ${med.anio_ant_2 ?? '-'}</th>
-        <th>Consumo Año ${med.anio_ant_1 ?? '-'}</th>
-      </tr>
-      <tr>
-        <td>${formatearNumero(med.consumo_ant_2)}</td>
-        <td>${formatearNumero(med.consumo_ant_1)}</td>
-      </tr>
-    </table>
-    ${construirAnalisis(med)}
-    ${construirTablaComparativaConvenios(actRes.data?.[0], nuevoRes.data?.[0])}
-    <table class="tabla-consumo">
-      <tr>
-        <th>Observaciones</th>
-      </tr>
-      <tr>
-        <td>${med.observaciones || '-'}</td>
-      </tr>
-    </table> 
+    <div class="card-detalle oculto">
+      <table class="tabla-consumo">
+        <tr>
+          <th>Código</th>
+          <th>Consumo Actual (${obtenerMesAnio(med.fecha_actual)})</th>
+          <th>Promedio Reposición</th>
+          <th>Consumo Proyectado</th>
+        </tr>
+        <tr>
+          <td>${med.codigo_med ?? '-'}</td>
+          <td>${formatearNumero(med.consumo_actual)}</td>
+          <td>${formatearNumero(med.prom_repo)}</td>
+          <td>${formatearNumero(med.consumo_proy)}</td>
+        </tr>
+      </table>
+      <table class="tabla-consumo">
+        <tr>
+          <th>Consumo Año ${med.anio_ant_2 ?? '-'}</th>
+          <th>Consumo Año ${med.anio_ant_1 ?? '-'}</th>
+        </tr>
+        <tr>
+          <td>${formatearNumero(med.consumo_ant_2)}</td>
+          <td>${formatearNumero(med.consumo_ant_1)}</td>
+        </tr>
+      </table>
+      ${construirAnalisis(med)}
+      ${construirTablaComparativaConvenios(actRes.data?.[0], nuevoRes.data?.[0])}
+      <table class="tabla-consumo">
+        <tr>
+          <th>Observaciones</th>
+        </tr>
+        <tr>
+          <td>${med.observaciones || '-'}</td>
+        </tr>
+      </table>
+    </div>
   `;
+
+  const detalle = card.querySelector('.card-detalle');
+  const btnVerDetalle = card.querySelector('.btn-ver-detalle-medicamento');
+  btnVerDetalle.addEventListener('click', () => {
+    const oculto = detalle.classList.toggle('oculto');
+    btnVerDetalle.classList.toggle('icon-collapse-abierto', !oculto);
+    btnVerDetalle.setAttribute('aria-expanded', String(!oculto));
+    btnVerDetalle.title = oculto ? 'Ver detalle' : 'Ocultar detalle';
+  });
 
   card.querySelector('.btn-editar-medicamento').addEventListener('click', () => abrirModalEditar(med));
   card.querySelector('.btn-eliminar-medicamento').addEventListener('click', () => eliminarMedicamento(med));
