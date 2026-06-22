@@ -414,10 +414,12 @@ formEditarMedicamento.addEventListener('submit', async (e) => {
   e.preventDefault();
   const formData = new FormData(formEditarMedicamento);
   const id = formData.get('id');
+  const consumoActual = Number(soloDigitos(formData.get('consumo_actual'))) || 0;
   const payload = {
     consumo_ant_2: Number(soloDigitos(formData.get('consumo_ant_2'))) || 0,
     consumo_ant_1: Number(soloDigitos(formData.get('consumo_ant_1'))) || 0,
-    consumo_actual: Number(soloDigitos(formData.get('consumo_actual'))) || 0,
+    consumo_actual: consumoActual,
+    consumo_proy: consumoActual ? Math.round((consumoActual / mesActualNumero) * 12) : 0,
     prom_repo: Number(soloDigitos(formData.get('prom_repo'))) || 0,
     observaciones: formData.get('observaciones'),
   };
@@ -544,6 +546,7 @@ formMedicamento.addEventListener('submit', async (e) => {
   payload.anio_ant_1 = anioAnt1;
   payload.anio_ant_2 = anioAnt2;
   payload.fecha_actual = new Date().toISOString().slice(0, 10);
+  payload.consumo_proy = Number(soloDigitos(inputConsumoProy.value)) || 0;
 
   const { error } = await supabaseClient.from('medicamento').insert(payload);
 
