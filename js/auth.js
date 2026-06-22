@@ -12,6 +12,7 @@ function mostrarApp() {
   appEl.classList.remove('oculto');
   cargarSelectsMedicamento();
   cargarSelectsProveedor();
+  cargarListaProveedores();
 }
 
 function mostrarLogin() {

@@ -33,9 +33,10 @@
       </div>
       <nav class="tabs">
         <button class="tab-btn active" data-tab="buscar">Búsqueda</button>
-        <button class="tab-btn" data-tab="ingresar-medicamento">Ingresar Medicamento</button>
+        <button class="tab-btn" data-tab="ingresar-medicamento">Ingresar Consumo Medicamento</button>
         <button class="tab-btn" data-tab="ingresar-convenio-act">Ingresar Convenio Vigente</button>
         <button class="tab-btn" data-tab="ingresar-convenio-nuevo">Ingresar Convenio Nuevo</button>
+        <button class="tab-btn" data-tab="proveedores">Proveedores</button>
       </nav>
     </header>
 
@@ -65,10 +66,10 @@
       <div id="resultados"></div>
     </section>
 
-    <!-- INGRESAR MEDICAMENTO -->
+    <!-- INGRESAR CONSUMO MEDICAMENTO -->
     <section id="ingresar-medicamento" class="tab-panel">
-      <h2>Ingresar Medicamento</h2>
-      <form id="form-medicamento" class="data-form">
+      <h2>Ingresar Consumo Medicamento</h2>
+      <form id="form-medicamento" class="data-form" data-tabla="medicamento" style="grid-template-columns: repeat(2, 1fr);">
         <label>Nombre Medicamento
           <input type="text" name="nombre_med" required>
         </label>
@@ -108,15 +109,17 @@
         <label class="campo-completo">Medicamento
           <select name="id_medicamento" required></select>
         </label>
-        <label>ID Convenio
+        <label class="campo-completo">ID Convenio
           <input type="text" name="id_convenio" required>
         </label>
-        <label>Proveedor
-          <select name="id_proveedor" class="select-proveedor" required></select>
-        </label>
-        <label class="campo-nuevo-proveedor oculto">Nombre nuevo proveedor
-          <input type="text" class="input-nuevo-proveedor" required>
-        </label>
+        <div class="campo-completo">
+          <label>Proveedor
+            <select name="id_proveedor" class="select-proveedor" required></select>
+          </label>
+          <label class="campo-nuevo-proveedor oculto">Nombre nuevo proveedor
+            <input type="text" class="input-nuevo-proveedor" required>
+          </label>
+        </div>
         <label>Cantidad
           <input type="text" inputmode="numeric" class="miles" name="cantidad" required>
         </label>
@@ -156,15 +159,17 @@
         <label class="campo-completo">Medicamento
           <select name="id_medicamento" required></select>
         </label>
-        <label>ID Convenio
+        <label class="campo-completo">ID Convenio
           <input type="text" name="id_convenio" required>
         </label>
-        <label>Proveedor
-          <select name="id_proveedor" class="select-proveedor" required></select>
-        </label>
-        <label class="campo-nuevo-proveedor oculto">Nombre nuevo proveedor
-          <input type="text" class="input-nuevo-proveedor" required>
-        </label>
+        <div class="campo-completo">
+          <label>Proveedor
+            <select name="id_proveedor" class="select-proveedor" required></select>
+          </label>
+          <label class="campo-nuevo-proveedor oculto">Nombre nuevo proveedor
+            <input type="text" class="input-nuevo-proveedor" required>
+          </label>
+        </div>
         <label>Cantidad
           <input type="text" inputmode="numeric" class="miles" name="cantidad" required>
         </label>
@@ -195,6 +200,20 @@
         </div>
       </form>
       <p id="convenio-nuevo-mensaje" class="mensaje"></p>
+    </section>
+
+    <!-- PROVEEDORES -->
+    <section id="proveedores" class="tab-panel">
+      <h2>Proveedores</h2>
+      <form id="form-nuevo-proveedor" class="data-form">
+        <label class="campo-completo">Nombre Proveedor
+          <input type="text" name="nombre_proveedor" required>
+        </label>
+        <button type="submit">Agregar Proveedor</button>
+      </form>
+      <p id="nuevo-proveedor-mensaje" class="mensaje"></p>
+      <p id="proveedores-mensaje" class="mensaje"></p>
+      <div id="lista-proveedores"></div>
     </section>
   </main>
   </div>
@@ -251,6 +270,23 @@
         </div>
       </form>
       <p id="editar-convenio-mensaje" class="mensaje"></p>
+    </div>
+  </div>
+
+  <div id="modal-editar-proveedor" class="modal-overlay oculto">
+    <div class="modal-contenido">
+      <h3>Editar Proveedor</h3>
+      <form id="form-editar-proveedor" class="data-form">
+        <input type="hidden" name="id">
+        <label class="campo-completo">Nombre Proveedor
+          <input type="text" name="nombre_proveedor" required>
+        </label>
+        <div class="modal-acciones">
+          <button type="button" id="btn-cancelar-editar-proveedor">Cancelar</button>
+          <button type="submit">Guardar Cambios</button>
+        </div>
+      </form>
+      <p id="editar-proveedor-mensaje" class="mensaje"></p>
     </div>
   </div>
 

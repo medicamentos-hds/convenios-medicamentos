@@ -179,6 +179,109 @@ function configurarSelectorProveedor(form) {
   });
 }
 
+// --- Ingresar proveedor ---
+const formNuevoProveedor = document.getElementById('form-nuevo-proveedor');
+
+formNuevoProveedor.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const nombreProveedor = formNuevoProveedor.elements['nombre_proveedor'].value.trim();
+
+  const { error } = await supabaseClient
+    .from('proveedor')
+    .insert({ nombre_proveedor: nombreProveedor });
+
+  if (error) {
+    mostrarMensaje('nuevo-proveedor-mensaje', `Error: ${error.message}`, 'error');
+    return;
+  }
+
+  mostrarMensaje('nuevo-proveedor-mensaje', 'Proveedor agregado correctamente.', 'ok');
+  formNuevoProveedor.reset();
+  await Promise.all([cargarListaProveedores(), cargarSelectsProveedor()]);
+});
+
+// --- Listado y edición de proveedores ---
+const listaProveedoresDiv = document.getElementById('lista-proveedores');
+const modalEditarProveedor = document.getElementById('modal-editar-proveedor');
+const formEditarProveedor = document.getElementById('form-editar-proveedor');
+
+async function cargarListaProveedores() {
+  const { data, error } = await supabaseClient
+    .from('proveedor')
+    .select('id, nombre_proveedor')
+    .order('nombre_proveedor', { ascending: true });
+
+  if (error) {
+    mostrarMensaje('proveedores-mensaje', `Error: ${error.message}`, 'error');
+    return;
+  }
+
+  if (!data.length) {
+    listaProveedoresDiv.innerHTML = '';
+    mostrarMensaje('proveedores-mensaje', 'No hay proveedores registrados.');
+    return;
+  }
+
+  mostrarMensaje('proveedores-mensaje', '');
+
+  const card = document.createElement('div');
+  card.className = 'card';
+  card.innerHTML = `
+    <table>
+      <tr>
+        <th>Nombre Proveedor</th>
+        <th></th>
+      </tr>
+      ${data.map((prov) => `
+        <tr>
+          <td>${prov.nombre_proveedor}</td>
+          <td><button type="button" class="btn-editar-convenio btn-editar-proveedor" data-id="${prov.id}">Editar</button></td>
+        </tr>
+      `).join('')}
+    </table>`;
+
+  card.querySelectorAll('.btn-editar-proveedor').forEach((btn) => {
+    const proveedor = data.find((p) => String(p.id) === btn.dataset.id);
+    btn.addEventListener('click', () => abrirModalEditarProveedor(proveedor));
+  });
+
+  listaProveedoresDiv.innerHTML = '';
+  listaProveedoresDiv.appendChild(card);
+}
+
+function abrirModalEditarProveedor(proveedor) {
+  formEditarProveedor.elements['id'].value = proveedor.id;
+  formEditarProveedor.elements['nombre_proveedor'].value = proveedor.nombre_proveedor;
+  mostrarMensaje('editar-proveedor-mensaje', '');
+  modalEditarProveedor.classList.remove('oculto');
+}
+
+function cerrarModalEditarProveedor() {
+  modalEditarProveedor.classList.add('oculto');
+}
+
+document.getElementById('btn-cancelar-editar-proveedor').addEventListener('click', cerrarModalEditarProveedor);
+
+formEditarProveedor.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const formData = new FormData(formEditarProveedor);
+  const id = formData.get('id');
+  const nombreProveedor = formData.get('nombre_proveedor').trim();
+
+  const { error } = await supabaseClient
+    .from('proveedor')
+    .update({ nombre_proveedor: nombreProveedor })
+    .eq('id', id);
+
+  if (error) {
+    mostrarMensaje('editar-proveedor-mensaje', `Error: ${error.message}`, 'error');
+    return;
+  }
+
+  cerrarModalEditarProveedor();
+  await Promise.all([cargarListaProveedores(), cargarSelectsProveedor()]);
+});
+
 // --- Buscar medicamentos + convenios relacionados ---
 const formBuscar = document.getElementById('form-buscar');
 const resultadosDiv = document.getElementById('resultados');
@@ -382,7 +485,20 @@ async function construirCardMedicamento(med) {
     btn.addEventListener('click', () => abrirModalEditarConvenio(tabla, convenio));
   });
 
+  card.querySelectorAll('.link-licitacion').forEach((link) => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      abrirModalLicitacion(link.dataset.idConvenio);
+    });
+  });
+
   return card;
+}
+
+// --- Ver licitación en Mercado Público (en ventana popup) ---
+function abrirModalLicitacion(idConvenio) {
+  const url = `http://www.mercadopublico.cl/Procurement/Modules/RFB/DetailsAcquisition.aspx?idlicitacion=${encodeURIComponent(idConvenio)}`;
+  window.open(url, 'licitacion', 'width=1000,height=800,noopener,noreferrer');
 }
 
 // --- Editar medicamento (consumo años anteriores y observaciones) ---
@@ -485,6 +601,11 @@ formEditarConvenio.addEventListener('submit', async (e) => {
   formBuscar.requestSubmit();
 });
 
+function enlaceLicitacion(idConvenio) {
+  if (!idConvenio) return '-';
+  return `<a href="#" class="link-licitacion" data-id-convenio="${idConvenio}">${idConvenio}</a>`;
+}
+
 function construirTablaComparativaConvenios(actual, nuevo) {
   const fila = (etiqueta, valorActual, valorNuevo) => `
     <tr>
@@ -503,7 +624,7 @@ function construirTablaComparativaConvenios(actual, nuevo) {
         <th>CONVENIO ACTUAL${actual ? ' <button type="button" class="btn-editar-convenio" data-tabla="convenio_act">Editar</button>' : ''}</th>
         <th>CONVENIO NUEVO${nuevo ? ' <button type="button" class="btn-editar-convenio" data-tabla="convenio_nuevo">Editar</button>' : ''}</th>
       </tr>
-      ${fila('ID CONVENIO', actual?.id_convenio ?? '-', nuevo?.id_convenio ?? '-')}
+      ${fila('ID CONVENIO', enlaceLicitacion(actual?.id_convenio), enlaceLicitacion(nuevo?.id_convenio))}
       ${fila('PROVEEDOR ADJUDICADO', actual?.proveedor?.nombre_proveedor ?? '-', nuevo?.proveedor?.nombre_proveedor ?? '-')}
       ${fila('CANTIDAD', formatearNumero(actual?.cantidad), formatearNumero(nuevo?.cantidad))}
       ${fila('PRECIO UNITARIO NETO', dinero(actual?.precio_unit_neto), dinero(nuevo?.precio_unit_neto))}

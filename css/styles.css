@@ -193,7 +193,7 @@ button:hover {
 
 .data-form {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 0.9rem;
 }
 
@@ -338,6 +338,11 @@ button:hover {
   padding: 1.5rem;
   width: 90%;
   max-width: 480px;
+}
+
+.link-licitacion {
+  color: var(--color-primary-dark);
+  font-weight: 600;
 }
 
 .modal-acciones {
