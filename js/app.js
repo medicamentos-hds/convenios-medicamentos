@@ -371,12 +371,13 @@ btnDescargarPdf.addEventListener('click', async () => {
   try {
     const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
     const margen = 14;
+    const altoPagina = pdf.internal.pageSize.getHeight();
     let posicionY = margen;
 
     for (const med of medicamentosEncontrados) {
       const { actual, nuevo } = await obtenerConveniosMedicamento(med.id);
 
-      if (posicionY > margen) {
+      if (posicionY > margen && posicionY + 22 > altoPagina - margen) {
         pdf.addPage();
         posicionY = margen;
       }
@@ -451,7 +452,7 @@ btnDescargarPdf.addEventListener('click', async () => {
         head: [['Observaciones']],
         body: [[med.observaciones || '-']],
       });
-      posicionY = pdf.lastAutoTable.finalY + 8;
+      posicionY = pdf.lastAutoTable.finalY + 10;
     }
 
     pdf.save(`resultados-medicamentos-${new Date().toISOString().slice(0, 10)}.pdf`);
