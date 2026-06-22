@@ -49,11 +49,14 @@ function calcularVariacion(valorActual, valorAnterior) {
   return ((valorActual - valorAnterior) / valorAnterior) * 100;
 }
 
-function lineaAnalisis(variacion, anioNuevo, anioViejo) {
+function lineaAnalisis(variacion, anioNuevo, anioViejo, isPdf) {
   if (variacion === null || !anioNuevo || !anioViejo) {
     return 'Sin datos suficientes para comparar.';
   }
-  const tipo = variacion >= 0 ? '⚠️⬆️' : '✔️⬇️';
+  var tipo = variacion >= 0 ? '⚠️⬆️' : '✔️⬇️';
+  if(isPdf){
+      tipo = variacion >= 0 ? 'AUMENTO (+)' : 'REDUCCIÓN (-)';
+  }
   return `${tipo} ${Math.abs(variacion).toFixed(2)}% ${anioNuevo} respecto del ${anioViejo}`;
 }
 
@@ -67,8 +70,8 @@ function construirAnalisis(med) {
       <tr>
         <th>ANÁLISIS</th>
         <td>
-          ${lineaAnalisis(variacion1, med.anio_ant_1, med.anio_ant_2)}<br>
-          ${lineaAnalisis(variacion2, anioActualConsumo, med.anio_ant_1)}
+          ${lineaAnalisis(variacion1, med.anio_ant_1, med.anio_ant_2, false)}<br>
+          ${lineaAnalisis(variacion2, anioActualConsumo, med.anio_ant_1, false)}
         </td>
       </tr>
     </table>`;
@@ -352,41 +355,104 @@ function obtenerRangoFecha(anio) {
 
 const modalProcesandoPdf = document.getElementById('modal-procesando-pdf');
 
+function dineroPdf(valor) {
+  return valor === null || valor === undefined || valor === '' ? '-' : `$ ${formatearNumero(valor)}`;
+}
+
+function mesesPdf(valor) {
+  return valor === null || valor === undefined || valor === '' ? '-' : `${formatearNumero(valor)} meses`;
+}
+
 btnDescargarPdf.addEventListener('click', async () => {
   btnDescargarPdf.disabled = true;
   mostrarMensaje('buscar-mensaje', 'Generando PDF...');
   modalProcesandoPdf.classList.remove('oculto');
 
   try {
-    resultadosDiv.innerHTML = '';
-    for (const med of medicamentosEncontrados) {
-      const card = await construirCardMedicamento(med);
-      card.querySelector('.card-detalle').classList.remove('oculto');
-      const btnVerDetalle = card.querySelector('.btn-ver-detalle-medicamento');
-      btnVerDetalle.classList.add('icon-collapse-abierto');
-      btnVerDetalle.setAttribute('aria-expanded', 'true');
-      resultadosDiv.appendChild(card);
-    }
-
-    const canvas = await html2canvas(resultadosDiv, { scale: 2, useCORS: true });
-    const imagenDatos = canvas.toDataURL('image/png');
     const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
-
-    const anchoPagina = pdf.internal.pageSize.getWidth();
+    const margen = 14;
     const altoPagina = pdf.internal.pageSize.getHeight();
-    const altoImagen = (canvas.height * anchoPagina) / canvas.width;
+    let posicionY = margen;
 
-    let alturaRestante = altoImagen;
-    let posicionY = 0;
+    for (const med of medicamentosEncontrados) {
+      const { actual, nuevo } = await obtenerConveniosMedicamento(med.id);
 
-    pdf.addImage(imagenDatos, 'PNG', 0, posicionY, anchoPagina, altoImagen);
-    alturaRestante -= altoPagina;
+      if (posicionY > margen && posicionY + 22 > altoPagina - margen) {
+        pdf.addPage();
+        posicionY = margen;
+      }
 
-    while (alturaRestante > 0) {
-      posicionY -= altoPagina;
-      pdf.addPage();
-      pdf.addImage(imagenDatos, 'PNG', 0, posicionY, anchoPagina, altoImagen);
-      alturaRestante -= altoPagina;
+      pdf.setFontSize(13);
+      pdf.text(
+        `${med.nombre_med}${med.fecha_actual ? ` (${med.fecha_actual.slice(0, 4)})` : ''}`,
+        margen,
+        posicionY
+      );
+      posicionY += 6;
+
+      pdf.autoTable({
+        startY: posicionY,
+        margin: { left: margen, right: margen },
+        styles: { fontSize: 9 },
+        head: [['Código', `Consumo Actual (${obtenerMesAnio(med.fecha_actual)})`, 'Promedio Reposición', 'Consumo Proyectado']],
+        body: [[
+          med.codigo_med ?? '-',
+          formatearNumero(med.consumo_actual),
+          formatearNumero(med.prom_repo),
+          formatearNumero(med.consumo_proy),
+        ]],
+      });
+      posicionY = pdf.lastAutoTable.finalY + 3;
+
+      pdf.autoTable({
+        startY: posicionY,
+        margin: { left: margen, right: margen },
+        styles: { fontSize: 9 },
+        head: [[`Consumo Año ${med.anio_ant_2 ?? '-'}`, `Consumo Año ${med.anio_ant_1 ?? '-'}`]],
+        body: [[formatearNumero(med.consumo_ant_2), formatearNumero(med.consumo_ant_1)]],
+      });
+      posicionY = pdf.lastAutoTable.finalY + 3;
+
+      const anioActualConsumo = med.anio_ant_1 ? med.anio_ant_1 + 1 : null;
+      const variacion1 = calcularVariacion(med.consumo_ant_1, med.consumo_ant_2);
+      const variacion2 = calcularVariacion(med.consumo_proy, med.consumo_ant_1);
+
+      pdf.autoTable({
+        startY: posicionY,
+        margin: { left: margen, right: margen },
+        styles: { fontSize: 9 },
+        body: [[
+          'Análisis',
+          `${lineaAnalisis(variacion1, med.anio_ant_1, med.anio_ant_2, true)}\n${lineaAnalisis(variacion2, anioActualConsumo, med.anio_ant_1, true)}`,
+        ]],
+      });
+      posicionY = pdf.lastAutoTable.finalY + 3;
+
+      pdf.autoTable({
+        startY: posicionY,
+        margin: { left: margen, right: margen },
+        styles: { fontSize: 9 },
+        head: [['', 'Convenio Actual', 'Convenio Nuevo']],
+        body: [
+          ['ID Convenio', actual?.id_convenio ?? '-', nuevo?.id_convenio ?? '-'],
+          ['Proveedor adjudicado', actual?.proveedor?.nombre_proveedor ?? '-', nuevo?.proveedor?.nombre_proveedor ?? '-'],
+          ['Cantidad', formatearNumero(actual?.cantidad), formatearNumero(nuevo?.cantidad)],
+          ['Precio unitario neto', dineroPdf(actual?.precio_unit_neto), dineroPdf(nuevo?.precio_unit_neto)],
+          ['Duración', mesesPdf(actual?.duracion_meses), mesesPdf(nuevo?.duracion_meses)],
+          ['Precio total convenio', dineroPdf(actual?.precio_total_conv), dineroPdf(nuevo?.precio_total_conv)],
+          ['Precio anual', dineroPdf(actual?.precio_anual_conv), dineroPdf(nuevo?.precio_anual_conv)],
+        ],
+      });
+      posicionY = pdf.lastAutoTable.finalY + 3;
+
+      pdf.autoTable({
+        startY: posicionY,
+        margin: { left: margen, right: margen },
+        styles: { fontSize: 9 },
+        head: [['Observaciones']],
+        body: [[med.observaciones || '-']],
+      });
+      posicionY = pdf.lastAutoTable.finalY + 10;
     }
 
     pdf.save(`resultados-medicamentos-${new Date().toISOString().slice(0, 10)}.pdf`);
@@ -394,7 +460,6 @@ btnDescargarPdf.addEventListener('click', async () => {
   } catch (error) {
     mostrarMensaje('buscar-mensaje', `Error al generar el PDF: ${error.message}`, 'error');
   } finally {
-    await renderizarPagina();
     modalProcesandoPdf.classList.add('oculto');
     btnDescargarPdf.disabled = false;
   }
@@ -531,17 +596,25 @@ function renderizarPaginador(totalPaginas) {
   paginadorDiv.appendChild(btnSiguiente);
 }
 
-async function construirCardMedicamento(med) {
+async function obtenerConveniosMedicamento(idMedicamento) {
   const [actRes, nuevoRes] = await Promise.all([
     supabaseClient
       .from('convenio_act')
       .select('*, proveedor(nombre_proveedor)')
-      .eq('id_medicamento', med.id),
+      .eq('id_medicamento', idMedicamento),
     supabaseClient
       .from('convenio_nuevo')
       .select('*, proveedor(nombre_proveedor)')
-      .eq('id_medicamento', med.id),
+      .eq('id_medicamento', idMedicamento),
   ]);
+
+  return { actual: actRes.data?.[0], nuevo: nuevoRes.data?.[0] };
+}
+
+async function construirCardMedicamento(med) {
+  const { actual, nuevo } = await obtenerConveniosMedicamento(med.id);
+  const actRes = { data: actual ? [actual] : [] };
+  const nuevoRes = { data: nuevo ? [nuevo] : [] };
 
   const card = document.createElement('div');
   card.className = 'card';
