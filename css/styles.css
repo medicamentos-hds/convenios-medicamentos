@@ -269,6 +269,10 @@ button:hover {
   line-height: 1.6;
 }
 
+.tabla-consumo tr th {
+  background: #e3e6e5;
+}
+
 .mensaje {
   min-height: 1.2rem;
   font-size: 0.9rem;
@@ -375,6 +379,10 @@ button:hover {
 
 .tabla-convenios td {
   text-align: center;
+}
+
+.tabla-convenios tr th {
+  background: #e3e6e5;
 }
 
 @media (max-width: 600px) {
