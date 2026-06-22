@@ -4,7 +4,7 @@ Sitio estático (HTML/CSS/JS puro) para buscar medicamentos y registrar convenio
 
 ## Estructura
 
-- `index.html` — UI con pestañas: Buscar, Ingresar Medicamento, Ingresar Convenio Vigente, Ingresar Convenio Nuevo.
+- `index.html` — UI con pestañas: Buscar, Ingresar Medicamento, Ingresar Convenio Vigente, Ingresar Convenio Nuevo, Proveedores.
 - `css/styles.css` — estilos.
 - `js/config.js` — credenciales de Supabase (NO se sube al repo, está en `.gitignore`).
 - `js/config.example.js` — plantilla de `config.js` para nuevos clones.
@@ -22,7 +22,7 @@ Sitio estático (HTML/CSS/JS puro) para buscar medicamentos y registrar convenio
 - `convenio_act` — convenio vigente asociado a un medicamento (`id_medicamento`) y a un proveedor (`id_proveedor`, nullable).
 - `convenio_nuevo` — duplicado de `convenio_act` para el convenio nuevo en evaluación.
 - `proveedor` — catálogo de proveedores (`id`, `nombre_proveedor`), referenciado por `id_proveedor` en ambas tablas de convenio.
-- `user` — credenciales de acceso al sitio (`user`, `password`). El nombre `user` es palabra reservada en Postgres, por lo que siempre se referencia entre comillas (`"user"`) en SQL.
+- `user` — credenciales de acceso al sitio (`user`, `password`, `name`). El nombre `user` es palabra reservada en Postgres, por lo que siempre se referencia entre comillas (`"user"`) en SQL.
 
 ## Configuración
 
@@ -49,7 +49,8 @@ Si el sitio es público y no quieres que cualquiera pueda insertar datos, consid
 
 - Al abrir el sitio se muestra una pantalla de login antes de cargar la app.
 - Las credenciales se verifican contra la tabla `user` (columnas `user` y `password`), comparando el valor ingresado tal cual (sin hash).
-- Si la combinación existe, se guarda el usuario en `sessionStorage` (se pierde al cerrar la pestaña) y se muestra la app. El botón "Cerrar sesión" del header borra esa sesión y vuelve al login.
+- Si la combinación existe, se guarda `{usuario, nombre}` (el `name` de la tabla `user`) en `sessionStorage` (se pierde al cerrar la pestaña) y se muestra la app.
+- El header muestra "Bienvenido/a, {nombre}" y un reloj con la hora actual (`es-CL`, actualizado cada segundo). El link "Cerrar sesión" borra esa sesión y vuelve al login.
 - **Importante:** dado que la política RLS de `user` permite `select` público (necesario para validar el login desde el navegador con la `anon key`), cualquiera que conozca la URL de Supabase puede leer la tabla completa de usuarios/contraseñas directamente vía API. Esto es un esquema de acceso básico para limitar el uso casual del sitio, **no** una autenticación segura. Si necesitas protección real, migra a Supabase Auth (con contraseñas hasheadas y políticas que solo permitan leer el propio usuario autenticado).
 
 ## Buscador
@@ -57,6 +58,7 @@ Si el sitio es público y no quieres que cualquiera pueda insertar datos, consid
 - Permite texto (nombre, coincidencia parcial) o número (código exacto o nombre parcial).
 - Incluye un segundo filtro por "ID convenio", que busca coincidencias parciales tanto en `convenio_act` (vigente) como en `convenio_nuevo`, y restringe los resultados a los medicamentos asociados a esos convenios. Ambos filtros (texto y convenio) se pueden combinar.
 - Cada resultado muestra los datos del medicamento, un cuadro de análisis comparativo (variación % de consumo entre años), los convenios vigente/nuevo asociados (con el nombre del proveedor) y las observaciones del medicamento.
+- El "ID CONVENIO" de cada convenio es un link: al hacer click abre una ventana popup con el detalle de la licitación en Mercado Público (`mercadopublico.cl/.../DetailsAcquisition.aspx?idlicitacion=...`). Se usa `window.open()` en vez de un iframe/modal embebido porque el sitio de Mercado Público envía la cabecera `X-Frame-Options: SAMEORIGIN`, que bloquea mostrarlo dentro de un iframe de otro origen.
 - Todos los valores numéricos (excepto años y código de medicamento) se muestran con separador de miles (`##.###.###`).
 - Cuando hay resultados, aparece el botón "Descargar resultados en PDF" (alineado a la derecha, junto al mensaje de estado), que genera un PDF a partir de la captura visual de los resultados (usando `html2canvas` + `jsPDF`, cargados por CDN) y lo descarga automáticamente, paginando si el contenido excede una hoja A4.
 
@@ -75,3 +77,9 @@ Si el sitio es público y no quieres que cualquiera pueda insertar datos, consid
 - `precio_anual_conv` es de solo lectura y se calcula como `precio_total_conv / (duracion_meses / 12)`.
 - `precio_unit_neto`, `precio_total_conv` y `precio_anual_conv` muestran el símbolo `$` fijo a la izquierda del campo.
 - El formulario requiere seleccionar un medicamento ya existente.
+
+## Pestaña "Proveedores"
+
+- Formulario para agregar un proveedor nuevo (inserta en `proveedor`).
+- Listado de todos los proveedores registrados, ordenados por nombre, con botón "Editar" por fila que abre un modal para actualizar `nombre_proveedor`.
+- Tanto el alta como la edición refrescan automáticamente los `<select>` de proveedor usados en los formularios de convenio.

@@ -16,6 +16,10 @@ create policy "medicamento_update_publico"
 on medicamento for update
 using (true);
 
+create policy "medicamento_delete_publico"
+on medicamento for delete
+using (true);
+
 -- ===== convenio_act =====
 alter table convenio_act enable row level security;
 
@@ -31,6 +35,10 @@ create policy "convenio_act_update_publico"
 on convenio_act for update
 using (true);
 
+create policy "convenio_act_delete_publico"
+on convenio_act for delete
+using (true);
+
 -- ===== convenio_nuevo =====
 alter table convenio_nuevo enable row level security;
 
@@ -44,6 +52,10 @@ with check (true);
 
 create policy "convenio_nuevo_update_publico"
 on convenio_nuevo for update
+using (true);
+
+create policy "convenio_nuevo_delete_publico"
+on convenio_nuevo for delete
 using (true);
 
 -- ===== proveedor =====

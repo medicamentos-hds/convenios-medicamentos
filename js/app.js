@@ -129,6 +129,10 @@ async function cargarSelectsMedicamento() {
     .forEach((select) => poblarSelect(select, idsConvenioNuevo));
 }
 
+document.querySelectorAll('.btn-refrescar-medicamento').forEach((btn) => {
+  btn.addEventListener('click', () => cargarSelectsMedicamento());
+});
+
 // --- Selects de proveedor (para formularios de convenio) ---
 const VALOR_NUEVO_PROVEEDOR = '__nuevo__';
 
@@ -286,7 +290,12 @@ formEditarProveedor.addEventListener('submit', async (e) => {
 // --- Buscar medicamentos + convenios relacionados ---
 const formBuscar = document.getElementById('form-buscar');
 const resultadosDiv = document.getElementById('resultados');
+const paginadorDiv = document.getElementById('paginador');
 const btnDescargarPdf = document.getElementById('btn-descargar-pdf');
+
+const RESULTADOS_POR_PAGINA = 5;
+let medicamentosEncontrados = [];
+let paginaActual = 1;
 
 formBuscar.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -301,6 +310,9 @@ document.getElementById('btn-limpiar').addEventListener('click', () => {
   document.getElementById('buscar-convenio').value = '';
   document.getElementById('buscar-anio').value = '';
   resultadosDiv.innerHTML = '';
+  paginadorDiv.innerHTML = '';
+  paginadorDiv.classList.add('oculto');
+  medicamentosEncontrados = [];
   mostrarMensaje('buscar-mensaje', '');
   btnDescargarPdf.classList.add('oculto');
 });
@@ -313,11 +325,24 @@ function obtenerRangoFecha(anio) {
   return { inicio, fin };
 }
 
+const modalProcesandoPdf = document.getElementById('modal-procesando-pdf');
+
 btnDescargarPdf.addEventListener('click', async () => {
   btnDescargarPdf.disabled = true;
   mostrarMensaje('buscar-mensaje', 'Generando PDF...');
+  modalProcesandoPdf.classList.remove('oculto');
 
   try {
+    resultadosDiv.innerHTML = '';
+    for (const med of medicamentosEncontrados) {
+      const card = await construirCardMedicamento(med);
+      card.querySelector('.card-detalle').classList.remove('oculto');
+      const btnVerDetalle = card.querySelector('.btn-ver-detalle-medicamento');
+      btnVerDetalle.classList.add('icon-collapse-abierto');
+      btnVerDetalle.setAttribute('aria-expanded', 'true');
+      resultadosDiv.appendChild(card);
+    }
+
     const canvas = await html2canvas(resultadosDiv, { scale: 2, useCORS: true });
     const imagenDatos = canvas.toDataURL('image/png');
     const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
@@ -344,6 +369,8 @@ btnDescargarPdf.addEventListener('click', async () => {
   } catch (error) {
     mostrarMensaje('buscar-mensaje', `Error al generar el PDF: ${error.message}`, 'error');
   } finally {
+    await renderizarPagina();
+    modalProcesandoPdf.classList.add('oculto');
     btnDescargarPdf.disabled = false;
   }
 });
@@ -364,6 +391,9 @@ async function buscarIdsMedicamentoPorConvenio(textoConvenio) {
 async function buscarMedicamentos(texto, textoConvenio, anio) {
   mostrarMensaje('buscar-mensaje', 'Buscando...');
   resultadosDiv.innerHTML = '';
+  paginadorDiv.innerHTML = '';
+  paginadorDiv.classList.add('oculto');
+  medicamentosEncontrados = [];
   btnDescargarPdf.classList.add('oculto');
 
   let query = supabaseClient.from('medicamento').select('*').order('nombre_med');
@@ -414,12 +444,66 @@ async function buscarMedicamentos(texto, textoConvenio, anio) {
 
   mostrarMensaje('buscar-mensaje', `${medicamentos.length} resultado(s).`, 'ok');
 
-  for (const med of medicamentos) {
+  medicamentosEncontrados = medicamentos;
+  paginaActual = 1;
+  await renderizarPagina();
+
+  btnDescargarPdf.classList.remove('oculto');
+}
+
+async function renderizarPagina() {
+  const totalPaginas = Math.max(1, Math.ceil(medicamentosEncontrados.length / RESULTADOS_POR_PAGINA));
+  paginaActual = Math.min(Math.max(1, paginaActual), totalPaginas);
+
+  const inicio = (paginaActual - 1) * RESULTADOS_POR_PAGINA;
+  const medicamentosPagina = medicamentosEncontrados.slice(inicio, inicio + RESULTADOS_POR_PAGINA);
+
+  resultadosDiv.innerHTML = '';
+  for (const med of medicamentosPagina) {
     const card = await construirCardMedicamento(med);
     resultadosDiv.appendChild(card);
   }
 
-  btnDescargarPdf.classList.remove('oculto');
+  renderizarPaginador(totalPaginas);
+}
+
+function renderizarPaginador(totalPaginas) {
+  paginadorDiv.innerHTML = '';
+
+  if (totalPaginas <= 1) {
+    paginadorDiv.classList.add('oculto');
+    return;
+  }
+
+  paginadorDiv.classList.remove('oculto');
+
+  const irAPagina = (pagina) => {
+    paginaActual = pagina;
+    renderizarPagina();
+  };
+
+  const btnAnterior = document.createElement('button');
+  btnAnterior.type = 'button';
+  btnAnterior.textContent = '‹ Anterior';
+  btnAnterior.disabled = paginaActual === 1;
+  btnAnterior.addEventListener('click', () => irAPagina(paginaActual - 1));
+  paginadorDiv.appendChild(btnAnterior);
+
+  for (let pagina = 1; pagina <= totalPaginas; pagina++) {
+    const btnPagina = document.createElement('button');
+    btnPagina.type = 'button';
+    btnPagina.textContent = String(pagina);
+    btnPagina.classList.toggle('active', pagina === paginaActual);
+    btnPagina.addEventListener('click', () => irAPagina(pagina));
+    paginadorDiv.appendChild(btnPagina);
+  }
+
+  const btnSiguiente = document.createElement('button');
+  btnSiguiente.type = 'button';
+  btnSiguiente.textContent = 'Siguiente ›';
+  btnSiguiente.disabled = paginaActual === totalPaginas;
+  btnSiguiente.addEventListener('click', () => irAPagina(paginaActual + 1));
+  paginadorDiv.appendChild(btnSiguiente);
 }
 
 async function construirCardMedicamento(med) {
@@ -438,52 +522,74 @@ async function construirCardMedicamento(med) {
   card.className = 'card';
 
   card.innerHTML = `
+    <button type="button" class="btn-ver-detalle-medicamento icon-collapse" title="Ver detalle" aria-expanded="false">▾</button>
     <div class="card-header">
       <h3>${med.nombre_med}${med.fecha_actual ? ` (${med.fecha_actual.slice(0, 4)})` : ''}</h3>
-      <button type="button" class="btn-editar-medicamento">Editar</button>
     </div>
-    <table class="tabla-consumo">
-      <tr>
-        <th>Código</th>
-        <th>Consumo Actual (${obtenerMesAnio(med.fecha_actual)})</th>
-        <th>Promedio Reposición</th>
-        <th>Consumo Proyectado</th>
-      </tr>
-      <tr>
-        <td>${med.codigo_med ?? '-'}</td>
-        <td>${formatearNumero(med.consumo_actual)}</td>
-        <td>${formatearNumero(med.prom_repo)}</td>
-        <td>${formatearNumero(med.consumo_proy)}</td>
-      </tr>
-    </table>
-    <table class="tabla-consumo">
-      <tr>
-        <th>Consumo Año ${med.anio_ant_2 ?? '-'}</th>
-        <th>Consumo Año ${med.anio_ant_1 ?? '-'}</th>
-      </tr>
-      <tr>
-        <td>${formatearNumero(med.consumo_ant_2)}</td>
-        <td>${formatearNumero(med.consumo_ant_1)}</td>
-      </tr>
-    </table>
-    ${construirAnalisis(med)}
-    ${construirTablaComparativaConvenios(actRes.data?.[0], nuevoRes.data?.[0])}
-    <table class="tabla-consumo">
-      <tr>
-        <th>Observaciones</th>
-      </tr>
-      <tr>
-        <td>${med.observaciones || '-'}</td>
-      </tr>
-    </table> 
+    <div class="card-detalle oculto">
+      <div class="card-header-acciones">
+        <button type="button" class="btn-editar-medicamento">Editar</button>
+        <button type="button" class="btn-eliminar-medicamento">Eliminar</button>
+      </div>
+      <table class="tabla-consumo">
+        <tr>
+          <th>Código</th>
+          <th>Consumo Actual (${obtenerMesAnio(med.fecha_actual)})</th>
+          <th>Promedio Reposición</th>
+          <th>Consumo Proyectado</th>
+        </tr>
+        <tr>
+          <td>${med.codigo_med ?? '-'}</td>
+          <td>${formatearNumero(med.consumo_actual)}</td>
+          <td>${formatearNumero(med.prom_repo)}</td>
+          <td>${formatearNumero(med.consumo_proy)}</td>
+        </tr>
+      </table>
+      <table class="tabla-consumo">
+        <tr>
+          <th>Consumo Año ${med.anio_ant_2 ?? '-'}</th>
+          <th>Consumo Año ${med.anio_ant_1 ?? '-'}</th>
+        </tr>
+        <tr>
+          <td>${formatearNumero(med.consumo_ant_2)}</td>
+          <td>${formatearNumero(med.consumo_ant_1)}</td>
+        </tr>
+      </table>
+      ${construirAnalisis(med)}
+      ${construirTablaComparativaConvenios(actRes.data?.[0], nuevoRes.data?.[0])}
+      <table class="tabla-consumo">
+        <tr>
+          <th>Observaciones</th>
+        </tr>
+        <tr>
+          <td>${med.observaciones || '-'}</td>
+        </tr>
+      </table>
+    </div>
   `;
 
+  const detalle = card.querySelector('.card-detalle');
+  const btnVerDetalle = card.querySelector('.btn-ver-detalle-medicamento');
+  btnVerDetalle.addEventListener('click', () => {
+    const oculto = detalle.classList.toggle('oculto');
+    btnVerDetalle.classList.toggle('icon-collapse-abierto', !oculto);
+    btnVerDetalle.setAttribute('aria-expanded', String(!oculto));
+    btnVerDetalle.title = oculto ? 'Ver detalle' : 'Ocultar detalle';
+  });
+
   card.querySelector('.btn-editar-medicamento').addEventListener('click', () => abrirModalEditar(med));
+  card.querySelector('.btn-eliminar-medicamento').addEventListener('click', () => eliminarMedicamento(med));
 
   card.querySelectorAll('.btn-editar-convenio').forEach((btn) => {
     const tabla = btn.dataset.tabla;
     const convenio = tabla === 'convenio_act' ? actRes.data?.[0] : nuevoRes.data?.[0];
     btn.addEventListener('click', () => abrirModalEditarConvenio(tabla, convenio));
+  });
+
+  card.querySelectorAll('.btn-eliminar-convenio').forEach((btn) => {
+    const tabla = btn.dataset.tabla;
+    const convenio = tabla === 'convenio_act' ? actRes.data?.[0] : nuevoRes.data?.[0];
+    btn.addEventListener('click', () => eliminarConvenio(tabla, convenio));
   });
 
   card.querySelectorAll('.link-licitacion').forEach((link) => {
@@ -560,6 +666,7 @@ function abrirModalEditarConvenio(tabla, convenio) {
   if (!convenio) return;
   formEditarConvenio.dataset.tabla = tabla;
   formEditarConvenio.elements['id'].value = convenio.id;
+  formEditarConvenio.elements['id_convenio'].value = convenio.id_convenio ?? '';
   formEditarConvenio.elements['cantidad'].value = formatoMiles(String(convenio.cantidad ?? 0));
   formEditarConvenio.elements['precio_unit_neto'].value = formatoMiles(String(convenio.precio_unit_neto ?? 0));
   formEditarConvenio.elements['duracion_meses'].value = formatoMiles(String(convenio.duracion_meses ?? 0));
@@ -578,12 +685,14 @@ formEditarConvenio.addEventListener('submit', async (e) => {
   const formData = new FormData(formEditarConvenio);
   const id = formData.get('id');
   const tabla = formEditarConvenio.dataset.tabla;
+  const idConvenio = formData.get('id_convenio').trim();
   const cantidad = Number(soloDigitos(formData.get('cantidad'))) || 0;
   const precioUnitNeto = Number(soloDigitos(formData.get('precio_unit_neto'))) || 0;
   const duracionMeses = Number(soloDigitos(formData.get('duracion_meses'))) || 0;
   const precioTotal = cantidad && precioUnitNeto ? Math.round(cantidad * precioUnitNeto * 1.19) : 0;
   const precioAnual = precioTotal && duracionMeses ? Math.round(precioTotal / (duracionMeses / 12)) : 0;
   const payload = {
+    id_convenio: idConvenio,
     cantidad,
     precio_unit_neto: precioUnitNeto,
     duracion_meses: duracionMeses,
@@ -601,6 +710,53 @@ formEditarConvenio.addEventListener('submit', async (e) => {
   cerrarModalEditarConvenio();
   formBuscar.requestSubmit();
 });
+
+async function eliminarConvenio(tabla, convenio) {
+  if (!convenio) return;
+  if (!confirm('¿Está seguro de que desea eliminar este convenio?')) return;
+
+  const { data, error } = await supabaseClient.from(tabla).delete().eq('id', convenio.id).select();
+
+  if (error) {
+    alert(`Error: ${error.message}`);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    alert('No se pudo eliminar el convenio. Verifique que existan permisos (política RLS) de eliminación en la base de datos.');
+    return;
+  }
+
+  formBuscar.requestSubmit();
+}
+
+async function eliminarMedicamento(med) {
+  if (!confirm('¿Está seguro de que desea eliminar este medicamento y sus convenios asociados? El proveedor no se eliminará.')) return;
+
+  const [actDel, nuevoDel] = await Promise.all([
+    supabaseClient.from('convenio_act').delete().eq('id_medicamento', med.id),
+    supabaseClient.from('convenio_nuevo').delete().eq('id_medicamento', med.id),
+  ]);
+
+  if (actDel.error || nuevoDel.error) {
+    alert(`Error: ${(actDel.error || nuevoDel.error).message}`);
+    return;
+  }
+
+  const { data, error } = await supabaseClient.from('medicamento').delete().eq('id', med.id).select();
+
+  if (error) {
+    alert(`Error: ${error.message}`);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    alert('No se pudo eliminar el medicamento. Verifique que existan permisos (política RLS) de eliminación en la base de datos.');
+    return;
+  }
+
+  formBuscar.requestSubmit();
+}
 
 function enlaceLicitacion(idConvenio) {
   if (!idConvenio) return '-';
@@ -622,8 +778,8 @@ function construirTablaComparativaConvenios(actual, nuevo) {
     <table class="tabla-convenios">
       <tr>
         <th></th>
-        <th>CONVENIO ACTUAL${actual ? ' <button type="button" class="btn-editar-convenio" data-tabla="convenio_act">Editar</button>' : ''}</th>
-        <th>CONVENIO NUEVO${nuevo ? ' <button type="button" class="btn-editar-convenio" data-tabla="convenio_nuevo">Editar</button>' : ''}</th>
+        <th>CONVENIO ACTUAL</th>
+        <th>CONVENIO NUEVO</th>
       </tr>
       ${fila('ID CONVENIO', enlaceLicitacion(actual?.id_convenio), enlaceLicitacion(nuevo?.id_convenio))}
       ${fila('PROVEEDOR ADJUDICADO', actual?.proveedor?.nombre_proveedor ?? '-', nuevo?.proveedor?.nombre_proveedor ?? '-')}
@@ -632,6 +788,15 @@ function construirTablaComparativaConvenios(actual, nuevo) {
       ${fila('DURACIÓN', meses(actual?.duracion_meses), meses(nuevo?.duracion_meses))}
       ${fila('PRECIO TOTAL CONVENIO', dinero(actual?.precio_total_conv), dinero(nuevo?.precio_total_conv))}
       ${fila('PRECIO ANUAL', dinero(actual?.precio_anual_conv), dinero(nuevo?.precio_anual_conv))}
+      ${fila(
+        'ACCIONES',
+        actual
+          ? '<button type="button" class="btn-editar-convenio" data-tabla="convenio_act">Editar</button> <button type="button" class="btn-eliminar-convenio" data-tabla="convenio_act">Eliminar</button>'
+          : '-',
+        nuevo
+          ? '<button type="button" class="btn-editar-convenio" data-tabla="convenio_nuevo">Editar</button> <button type="button" class="btn-eliminar-convenio" data-tabla="convenio_nuevo">Eliminar</button>'
+          : '-'
+      )}
     </table>`;
 }
 
