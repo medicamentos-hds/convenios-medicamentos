@@ -290,7 +290,12 @@ formEditarProveedor.addEventListener('submit', async (e) => {
 // --- Buscar medicamentos + convenios relacionados ---
 const formBuscar = document.getElementById('form-buscar');
 const resultadosDiv = document.getElementById('resultados');
+const paginadorDiv = document.getElementById('paginador');
 const btnDescargarPdf = document.getElementById('btn-descargar-pdf');
+
+const RESULTADOS_POR_PAGINA = 5;
+let medicamentosEncontrados = [];
+let paginaActual = 1;
 
 formBuscar.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -305,6 +310,9 @@ document.getElementById('btn-limpiar').addEventListener('click', () => {
   document.getElementById('buscar-convenio').value = '';
   document.getElementById('buscar-anio').value = '';
   resultadosDiv.innerHTML = '';
+  paginadorDiv.innerHTML = '';
+  paginadorDiv.classList.add('oculto');
+  medicamentosEncontrados = [];
   mostrarMensaje('buscar-mensaje', '');
   btnDescargarPdf.classList.add('oculto');
 });
@@ -324,17 +332,17 @@ btnDescargarPdf.addEventListener('click', async () => {
   mostrarMensaje('buscar-mensaje', 'Generando PDF...');
   modalProcesandoPdf.classList.remove('oculto');
 
-  const detallesOcultos = [...resultadosDiv.querySelectorAll('.card-detalle.oculto')];
-  detallesOcultos.forEach((detalle) => {
-    detalle.classList.remove('oculto');
-    const btnVerDetalle = detalle.previousElementSibling?.querySelector('.btn-ver-detalle-medicamento');
-    if (btnVerDetalle) {
+  try {
+    resultadosDiv.innerHTML = '';
+    for (const med of medicamentosEncontrados) {
+      const card = await construirCardMedicamento(med);
+      card.querySelector('.card-detalle').classList.remove('oculto');
+      const btnVerDetalle = card.querySelector('.btn-ver-detalle-medicamento');
       btnVerDetalle.classList.add('icon-collapse-abierto');
       btnVerDetalle.setAttribute('aria-expanded', 'true');
+      resultadosDiv.appendChild(card);
     }
-  });
 
-  try {
     const canvas = await html2canvas(resultadosDiv, { scale: 2, useCORS: true });
     const imagenDatos = canvas.toDataURL('image/png');
     const pdf = new jspdf.jsPDF('p', 'mm', 'a4');
@@ -361,14 +369,7 @@ btnDescargarPdf.addEventListener('click', async () => {
   } catch (error) {
     mostrarMensaje('buscar-mensaje', `Error al generar el PDF: ${error.message}`, 'error');
   } finally {
-    detallesOcultos.forEach((detalle) => {
-      detalle.classList.add('oculto');
-      const btnVerDetalle = detalle.previousElementSibling?.querySelector('.btn-ver-detalle-medicamento');
-      if (btnVerDetalle) {
-        btnVerDetalle.classList.remove('icon-collapse-abierto');
-        btnVerDetalle.setAttribute('aria-expanded', 'false');
-      }
-    });
+    await renderizarPagina();
     modalProcesandoPdf.classList.add('oculto');
     btnDescargarPdf.disabled = false;
   }
@@ -390,6 +391,9 @@ async function buscarIdsMedicamentoPorConvenio(textoConvenio) {
 async function buscarMedicamentos(texto, textoConvenio, anio) {
   mostrarMensaje('buscar-mensaje', 'Buscando...');
   resultadosDiv.innerHTML = '';
+  paginadorDiv.innerHTML = '';
+  paginadorDiv.classList.add('oculto');
+  medicamentosEncontrados = [];
   btnDescargarPdf.classList.add('oculto');
 
   let query = supabaseClient.from('medicamento').select('*').order('nombre_med');
@@ -440,12 +444,66 @@ async function buscarMedicamentos(texto, textoConvenio, anio) {
 
   mostrarMensaje('buscar-mensaje', `${medicamentos.length} resultado(s).`, 'ok');
 
-  for (const med of medicamentos) {
+  medicamentosEncontrados = medicamentos;
+  paginaActual = 1;
+  await renderizarPagina();
+
+  btnDescargarPdf.classList.remove('oculto');
+}
+
+async function renderizarPagina() {
+  const totalPaginas = Math.max(1, Math.ceil(medicamentosEncontrados.length / RESULTADOS_POR_PAGINA));
+  paginaActual = Math.min(Math.max(1, paginaActual), totalPaginas);
+
+  const inicio = (paginaActual - 1) * RESULTADOS_POR_PAGINA;
+  const medicamentosPagina = medicamentosEncontrados.slice(inicio, inicio + RESULTADOS_POR_PAGINA);
+
+  resultadosDiv.innerHTML = '';
+  for (const med of medicamentosPagina) {
     const card = await construirCardMedicamento(med);
     resultadosDiv.appendChild(card);
   }
 
-  btnDescargarPdf.classList.remove('oculto');
+  renderizarPaginador(totalPaginas);
+}
+
+function renderizarPaginador(totalPaginas) {
+  paginadorDiv.innerHTML = '';
+
+  if (totalPaginas <= 1) {
+    paginadorDiv.classList.add('oculto');
+    return;
+  }
+
+  paginadorDiv.classList.remove('oculto');
+
+  const irAPagina = (pagina) => {
+    paginaActual = pagina;
+    renderizarPagina();
+  };
+
+  const btnAnterior = document.createElement('button');
+  btnAnterior.type = 'button';
+  btnAnterior.textContent = '‹ Anterior';
+  btnAnterior.disabled = paginaActual === 1;
+  btnAnterior.addEventListener('click', () => irAPagina(paginaActual - 1));
+  paginadorDiv.appendChild(btnAnterior);
+
+  for (let pagina = 1; pagina <= totalPaginas; pagina++) {
+    const btnPagina = document.createElement('button');
+    btnPagina.type = 'button';
+    btnPagina.textContent = String(pagina);
+    btnPagina.classList.toggle('active', pagina === paginaActual);
+    btnPagina.addEventListener('click', () => irAPagina(pagina));
+    paginadorDiv.appendChild(btnPagina);
+  }
+
+  const btnSiguiente = document.createElement('button');
+  btnSiguiente.type = 'button';
+  btnSiguiente.textContent = 'Siguiente ›';
+  btnSiguiente.disabled = paginaActual === totalPaginas;
+  btnSiguiente.addEventListener('click', () => irAPagina(paginaActual + 1));
+  paginadorDiv.appendChild(btnSiguiente);
 }
 
 async function construirCardMedicamento(med) {
@@ -467,12 +525,12 @@ async function construirCardMedicamento(med) {
     <button type="button" class="btn-ver-detalle-medicamento icon-collapse" title="Ver detalle" aria-expanded="false">▾</button>
     <div class="card-header">
       <h3>${med.nombre_med}${med.fecha_actual ? ` (${med.fecha_actual.slice(0, 4)})` : ''}</h3>
+    </div>
+    <div class="card-detalle oculto">
       <div class="card-header-acciones">
         <button type="button" class="btn-editar-medicamento">Editar</button>
         <button type="button" class="btn-eliminar-medicamento">Eliminar</button>
       </div>
-    </div>
-    <div class="card-detalle oculto">
       <table class="tabla-consumo">
         <tr>
           <th>Código</th>
@@ -608,6 +666,7 @@ function abrirModalEditarConvenio(tabla, convenio) {
   if (!convenio) return;
   formEditarConvenio.dataset.tabla = tabla;
   formEditarConvenio.elements['id'].value = convenio.id;
+  formEditarConvenio.elements['id_convenio'].value = convenio.id_convenio ?? '';
   formEditarConvenio.elements['cantidad'].value = formatoMiles(String(convenio.cantidad ?? 0));
   formEditarConvenio.elements['precio_unit_neto'].value = formatoMiles(String(convenio.precio_unit_neto ?? 0));
   formEditarConvenio.elements['duracion_meses'].value = formatoMiles(String(convenio.duracion_meses ?? 0));
@@ -626,12 +685,14 @@ formEditarConvenio.addEventListener('submit', async (e) => {
   const formData = new FormData(formEditarConvenio);
   const id = formData.get('id');
   const tabla = formEditarConvenio.dataset.tabla;
+  const idConvenio = formData.get('id_convenio').trim();
   const cantidad = Number(soloDigitos(formData.get('cantidad'))) || 0;
   const precioUnitNeto = Number(soloDigitos(formData.get('precio_unit_neto'))) || 0;
   const duracionMeses = Number(soloDigitos(formData.get('duracion_meses'))) || 0;
   const precioTotal = cantidad && precioUnitNeto ? Math.round(cantidad * precioUnitNeto * 1.19) : 0;
   const precioAnual = precioTotal && duracionMeses ? Math.round(precioTotal / (duracionMeses / 12)) : 0;
   const payload = {
+    id_convenio: idConvenio,
     cantidad,
     precio_unit_neto: precioUnitNeto,
     duracion_meses: duracionMeses,

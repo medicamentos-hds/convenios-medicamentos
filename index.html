@@ -70,6 +70,7 @@
         <button type="button" id="btn-descargar-pdf" class="btn-pdf oculto">Descargar Resultados en PDF</button>
       </div>
       <div id="resultados"></div>
+      <div id="paginador" class="paginador oculto"></div>
     </section>
 
     <!-- INGRESAR CONSUMO MEDICAMENTO -->
@@ -264,6 +265,9 @@
       <h3>Editar Convenio</h3>
       <form id="form-editar-convenio" class="data-form" style="grid-template-columns: repeat(1, 1fr);">
         <input type="hidden" name="id">
+        <label>ID Convenio
+          <input type="text" name="id_convenio" required>
+        </label>
         <label>Cantidad
           <input type="text" inputmode="numeric" class="miles" name="cantidad">
         </label>
@@ -305,7 +309,9 @@
   <div id="modal-procesando-pdf" class="modal-overlay oculto">
     <div class="modal-contenido modal-procesando">
       <div class="spinner"></div>
-      <p>Generando PDF...</p>
+      <img src="/assets/pdf.png" alt="Descargar PDF" style="width: 10%; height: 10%;">
+      <p>Generando Archivo PDF...</p>
+      
     </div>
   </div>
 
