@@ -44,141 +44,182 @@
     <section id="buscar" class="tab-panel active">
       <h2>Buscar medicamento</h2>
       <form id="form-buscar" class="inline-form">
-        <input type="text" id="buscar-texto" placeholder="Nombre o código del medicamento...">
-        <input type="text" id="buscar-convenio" placeholder="ID convenio (vigente o nuevo)...">
-        <button type="submit">Buscar</button>
-        <button type="button" id="btn-limpiar">Limpiar</button>
+        <div class="fila-buscar">
+          <input type="text" id="buscar-texto" placeholder="Nombre o código del medicamento...">
+          <input type="text" id="buscar-convenio" placeholder="ID convenio (vigente o nuevo)...">
+        </div>
+        <div class="fila-buscar">
+          <label class="campo-buscar-anio">Año Ingreso Medicamento
+            <input type="number" id="buscar-anio" placeholder="Año..." min="2000" max="2100">
+          </label>
+        </div>
+        <div class="fila-buscar" style="justify-content: right;">
+          <button type="submit">Buscar</button>
+          <button type="button" id="btn-limpiar">Limpiar</button>
+        </div>
       </form>
       <div class="fila-buscar-acciones">
         <p id="buscar-mensaje" class="mensaje"></p>
-        <button type="button" id="btn-descargar-pdf" class="btn-pdf oculto">Descargar resultados en PDF</button>
+        <button type="button" id="btn-descargar-pdf" class="btn-pdf oculto">Descargar Resultados en PDF</button>
       </div>
       <div id="resultados"></div>
     </section>
 
     <!-- INGRESAR MEDICAMENTO -->
     <section id="ingresar-medicamento" class="tab-panel">
-      <h2>Ingresar medicamento</h2>
+      <h2>Ingresar Medicamento</h2>
       <form id="form-medicamento" class="data-form">
-        <label>Nombre medicamento
+        <label>Nombre Medicamento
           <input type="text" name="nombre_med" required>
         </label>
-        <label>Código medicamento
+        <label>Código Medicamento
           <input type="text" inputmode="numeric" class="solo-digitos" name="codigo_med">
         </label>
-        <label><span id="label-consumo-ant-2">Consumo año anterior 2</span>
-          <input type="text" inputmode="numeric" class="miles" name="consumo_ant_2">
+        <label><span id="label-consumo-ant-2">Consumo Año Anterior 2</span>
+          <input type="text" inputmode="numeric" class="miles" name="consumo_ant_2" value="0">
         </label>
-        <label><span id="label-consumo-ant-1">Consumo año anterior 1</span>
-          <input type="text" inputmode="numeric" class="miles" name="consumo_ant_1">
+        <label><span id="label-consumo-ant-1">Consumo Año Anterior 1</span>
+          <input type="text" inputmode="numeric" class="miles" name="consumo_ant_1" value="0">
         </label>
-        <label><span id="label-consumo-actual">Consumo actual</span>
-          <input type="text" inputmode="numeric" class="miles" name="consumo_actual">
+        <label><span id="label-consumo-actual">Consumo Año Actual</span>
+          <input type="text" inputmode="numeric" class="miles" name="consumo_actual" required>
         </label>
-        <label>Promedio reposición
-          <input type="text" inputmode="numeric" class="miles" name="prom_repo">
+        <label>Promedio Reposición (últimos 3 meses)
+          <input type="text" inputmode="numeric" class="miles" name="prom_repo" required>
         </label>
-        <label>Consumo proyectado
-          <input type="text" inputmode="numeric" class="miles" name="consumo_proy" id="input-consumo-proy" readonly>
+        <label>Consumo Proyectado Año Actual
+          <input type="text" inputmode="numeric" class="miles" name="consumo_proy" id="input-consumo-proy" readonly disabled>
         </label>
         <label class="campo-completo">Observaciones
           <textarea name="observaciones" rows="3"></textarea>
         </label>
-        <button type="submit">Guardar medicamento</button>
+        <div class="fila-acciones-form">
+          <button type="submit">Guardar Medicamento</button>
+          <button type="button" id="btn-limpiar-medicamento">Limpiar</button>
+        </div>
       </form>
       <p id="medicamento-mensaje" class="mensaje"></p>
     </section>
 
     <!-- INGRESAR CONVENIO ACTUAL -->
     <section id="ingresar-convenio-act" class="tab-panel">
-      <h2>Ingresar convenio vigente</h2>
+      <h2>Ingresar Convenio Vigente</h2>
       <form id="form-convenio-act" class="data-form" data-tabla="convenio_act">
         <label>Medicamento
           <select name="id_medicamento" required></select>
         </label>
-        <label>ID convenio
-          <input type="text" name="id_convenio">
+        <label>ID Convenio
+          <input type="text" name="id_convenio" required>
         </label>
         <label>Proveedor
-          <select name="id_proveedor" class="select-proveedor"></select>
+          <select name="id_proveedor" class="select-proveedor" required></select>
         </label>
         <label class="campo-nuevo-proveedor oculto">Nombre nuevo proveedor
-          <input type="text" class="input-nuevo-proveedor">
+          <input type="text" class="input-nuevo-proveedor" required>
         </label>
         <label>Cantidad
-          <input type="text" inputmode="numeric" class="miles" name="cantidad">
+          <input type="text" inputmode="numeric" class="miles" name="cantidad" required>
         </label>
-        <label>Precio unitario neto
+        <label>Precio Unitario Neto
           <span class="campo-moneda">
             <span class="simbolo-moneda">$</span>
-            <input type="text" inputmode="numeric" class="miles" name="precio_unit_neto">
+            <input type="text" inputmode="numeric" class="miles" name="precio_unit_neto" required>
           </span>
         </label>
         <label>Duración (meses)
-          <input type="text" inputmode="numeric" class="miles" name="duracion_meses">
+          <input type="text" inputmode="numeric" class="miles" name="duracion_meses" required>
         </label>
-        <label>Precio total convenio
+        <label>Precio Total Convenio
           <span class="campo-moneda">
             <span class="simbolo-moneda">$</span>
-            <input type="text" inputmode="numeric" class="miles" name="precio_total_conv" readonly>
+            <input type="text" inputmode="numeric" class="miles" name="precio_total_conv" readonly disabled>
           </span>
         </label>
-        <label>Precio anual convenio
+        <label>Precio Anual Convenio
           <span class="campo-moneda">
             <span class="simbolo-moneda">$</span>
-            <input type="text" inputmode="numeric" class="miles" name="precio_anual_conv" readonly>
+            <input type="text" inputmode="numeric" class="miles" name="precio_anual_conv" readonly disabled>
           </span>
         </label>
-        <button type="submit">Guardar convenio vigente</button>
+        <div class="fila-acciones-form">
+          <button type="submit">Guardar Convenio Vigente</button>
+          <button type="button" class="btn-limpiar-convenio">Limpiar</button>
+        </div>
       </form>
       <p id="convenio-act-mensaje" class="mensaje"></p>
     </section>
 
     <!-- INGRESAR CONVENIO NUEVO -->
     <section id="ingresar-convenio-nuevo" class="tab-panel">
-      <h2>Ingresar convenio nuevo</h2>
+      <h2>Ingresar Convenio Nuevo</h2>
       <form id="form-convenio-nuevo" class="data-form" data-tabla="convenio_nuevo">
         <label>Medicamento
           <select name="id_medicamento" required></select>
         </label>
-        <label>ID convenio
-          <input type="text" name="id_convenio">
+        <label>ID Convenio
+          <input type="text" name="id_convenio" required>
         </label>
         <label>Proveedor
-          <select name="id_proveedor" class="select-proveedor"></select>
+          <select name="id_proveedor" class="select-proveedor" required></select>
         </label>
         <label class="campo-nuevo-proveedor oculto">Nombre nuevo proveedor
-          <input type="text" class="input-nuevo-proveedor">
+          <input type="text" class="input-nuevo-proveedor" required>
         </label>
         <label>Cantidad
-          <input type="text" inputmode="numeric" class="miles" name="cantidad">
+          <input type="text" inputmode="numeric" class="miles" name="cantidad" required>
         </label>
-        <label>Precio unitario neto
+        <label>Precio Unitario Neto
           <span class="campo-moneda">
             <span class="simbolo-moneda">$</span>
-            <input type="text" inputmode="numeric" class="miles" name="precio_unit_neto">
+            <input type="text" inputmode="numeric" class="miles" name="precio_unit_neto" required>
           </span>
         </label>
         <label>Duración (meses)
-          <input type="text" inputmode="numeric" class="miles" name="duracion_meses">
+          <input type="text" inputmode="numeric" class="miles" name="duracion_meses" required>
         </label>
-        <label>Precio total convenio
+        <label>Precio Total Convenio
           <span class="campo-moneda">
             <span class="simbolo-moneda">$</span>
-            <input type="text" inputmode="numeric" class="miles" name="precio_total_conv" readonly>
+            <input type="text" inputmode="numeric" class="miles" name="precio_total_conv" readonly disabled>
           </span>
         </label>
         <label>Precio anual convenio
           <span class="campo-moneda">
             <span class="simbolo-moneda">$</span>
-            <input type="text" inputmode="numeric" class="miles" name="precio_anual_conv" readonly>
+            <input type="text" inputmode="numeric" class="miles" name="precio_anual_conv" readonly disabled>
           </span>
         </label>
-        <button type="submit">Guardar convenio nuevo</button>
+        <div class="fila-acciones-form">
+          <button type="submit">Guardar Convenio Nuevo</button>
+          <button type="button" class="btn-limpiar-convenio">Limpiar</button>
+        </div>
       </form>
       <p id="convenio-nuevo-mensaje" class="mensaje"></p>
     </section>
   </main>
+  </div>
+
+  <div id="modal-editar-medicamento" class="modal-overlay oculto">
+    <div class="modal-contenido">
+      <h3>Editar Medicamento</h3>
+      <form id="form-editar-medicamento" class="data-form">
+        <input type="hidden" name="id">
+        <label><span id="label-editar-consumo-ant-2">Consumo Año Anterior 2</span>
+          <input type="text" inputmode="numeric" class="miles" name="consumo_ant_2">
+        </label>
+        <label><span id="label-editar-consumo-ant-1">Consumo Año Anterior 1</span>
+          <input type="text" inputmode="numeric" class="miles" name="consumo_ant_1">
+        </label>
+        <label class="campo-completo">Observaciones
+          <textarea name="observaciones" rows="3"></textarea>
+        </label>
+        <div class="modal-acciones">
+          <button type="button" id="btn-cancelar-editar">Cancelar</button>
+          <button type="submit">Guardar Cambios</button>
+        </div>
+      </form>
+      <p id="editar-medicamento-mensaje" class="mensaje"></p>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>

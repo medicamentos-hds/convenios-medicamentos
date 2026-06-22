@@ -20,7 +20,7 @@ function mostrarMensaje(elementId, texto, tipo) {
 
 // --- Formato de números con punto como separador de miles (##.###.###) ---
 function soloDigitos(valor) {
-  return (valor || '').replace(/\D/g, '');
+  return (valor || '').replace(/\D/g, '').replace(/^0+(?=\d)/, '');
 }
 
 function formatoMiles(digitos) {
@@ -53,7 +53,7 @@ function lineaAnalisis(variacion, anioNuevo, anioViejo) {
   if (variacion === null || !anioNuevo || !anioViejo) {
     return 'Sin datos suficientes para comparar.';
   }
-  const tipo = variacion >= 0 ? 'AUMENTO' : 'DISMINUCIÓN';
+  const tipo = variacion >= 0 ? '⚠️⬆️' : '✔️⬇️';
   return `${tipo} ${Math.abs(variacion).toFixed(2)}% ${anioNuevo} respecto del ${anioViejo}`;
 }
 
@@ -166,16 +166,26 @@ formBuscar.addEventListener('submit', async (e) => {
   e.preventDefault();
   const texto = document.getElementById('buscar-texto').value.trim();
   const textoConvenio = document.getElementById('buscar-convenio').value.trim();
-  await buscarMedicamentos(texto, textoConvenio);
+  const anio = document.getElementById('buscar-anio').value.trim();
+  await buscarMedicamentos(texto, textoConvenio, anio);
 });
 
 document.getElementById('btn-limpiar').addEventListener('click', () => {
   document.getElementById('buscar-texto').value = '';
   document.getElementById('buscar-convenio').value = '';
+  document.getElementById('buscar-anio').value = '';
   resultadosDiv.innerHTML = '';
   mostrarMensaje('buscar-mensaje', '');
   btnDescargarPdf.classList.add('oculto');
 });
+
+function obtenerRangoFecha(anio) {
+  if (!anio) return null;
+  const anioNum = Number(anio);
+  const inicio = new Date(anioNum, 0, 1);
+  const fin = new Date(anioNum + 1, 0, 1);
+  return { inicio, fin };
+}
 
 btnDescargarPdf.addEventListener('click', async () => {
   btnDescargarPdf.disabled = true;
@@ -225,12 +235,19 @@ async function buscarIdsMedicamentoPorConvenio(textoConvenio) {
   return { ids: [...new Set(ids)], error: null };
 }
 
-async function buscarMedicamentos(texto, textoConvenio) {
+async function buscarMedicamentos(texto, textoConvenio, anio) {
   mostrarMensaje('buscar-mensaje', 'Buscando...');
   resultadosDiv.innerHTML = '';
   btnDescargarPdf.classList.add('oculto');
 
   let query = supabaseClient.from('medicamento').select('*').order('nombre_med');
+
+  const rangoFecha = obtenerRangoFecha(anio);
+  if (rangoFecha) {
+    query = query
+      .gte('fecha_actual', rangoFecha.inicio.toISOString().slice(0, 10))
+      .lt('fecha_actual', rangoFecha.fin.toISOString().slice(0, 10));
+  }
 
   if (texto) {
     const esNumero = /^\d+$/.test(texto);
@@ -295,13 +312,16 @@ async function construirCardMedicamento(med) {
   card.className = 'card';
 
   card.innerHTML = `
-    <h3>${med.nombre_med}</h3>
+    <div class="card-header">
+      <h3>${med.nombre_med}${med.fecha_actual ? ` (${med.fecha_actual.slice(0, 4)})` : ''}</h3>
+      <button type="button" class="btn-editar-medicamento">Editar</button>
+    </div>
     <table>
       <tr>
         <th>Código</th>
-        <th>Consumo actual (${obtenerMesAnio(med.fecha_actual)})</th>
-        <th>Consumo proyectado</th>
-        <th>Promedio reposición</th>
+        <th>Consumo Actual (${obtenerMesAnio(med.fecha_actual)})</th>
+        <th>Consumo Proyectado</th>
+        <th>Promedio Reposición</th>
       </tr>
       <tr>
         <td>${med.codigo_med ?? '-'}</td>
@@ -312,8 +332,8 @@ async function construirCardMedicamento(med) {
     </table>
     <table>
       <tr>
-        <th>Consumo año ${med.anio_ant_2 ?? '-'}</th>
-        <th>Consumo año ${med.anio_ant_1 ?? '-'}</th>
+        <th>Consumo Año ${med.anio_ant_2 ?? '-'}</th>
+        <th>Consumo Año ${med.anio_ant_1 ?? '-'}</th>
       </tr>
       <tr>
         <td>${formatearNumero(med.consumo_ant_2)}</td>
@@ -321,47 +341,82 @@ async function construirCardMedicamento(med) {
       </tr>
     </table>
     ${construirAnalisis(med)}
-    ${construirTablaConvenios('Convenio vigente', actRes.data)}
-    ${construirTablaConvenios('Convenio nuevo', nuevoRes.data)}
+    ${construirTablaComparativaConvenios(actRes.data?.[0], nuevoRes.data?.[0])}
     <p><strong>Observaciones:</strong> ${med.observaciones || '-'}</p>
   `;
+
+  card.querySelector('.btn-editar-medicamento').addEventListener('click', () => abrirModalEditar(med));
 
   return card;
 }
 
-function construirTablaConvenios(titulo, convenios) {
-  if (!convenios || !convenios.length) {
-    return `<table><caption>${titulo}</caption><tr><td>Sin registros</td></tr></table>`;
+// --- Editar medicamento (consumo años anteriores y observaciones) ---
+const modalEditar = document.getElementById('modal-editar-medicamento');
+const formEditarMedicamento = document.getElementById('form-editar-medicamento');
+
+function abrirModalEditar(med) {
+  formEditarMedicamento.elements['id'].value = med.id;
+  formEditarMedicamento.elements['consumo_ant_2'].value = formatoMiles(String(med.consumo_ant_2 ?? 0));
+  formEditarMedicamento.elements['consumo_ant_1'].value = formatoMiles(String(med.consumo_ant_1 ?? 0));
+  formEditarMedicamento.elements['observaciones'].value = med.observaciones || '';
+  document.getElementById('label-editar-consumo-ant-2').textContent = `Consumo Año ${med.anio_ant_2 ?? '-'}`;
+  document.getElementById('label-editar-consumo-ant-1').textContent = `Consumo Año ${med.anio_ant_1 ?? '-'}`;
+  mostrarMensaje('editar-medicamento-mensaje', '');
+  modalEditar.classList.remove('oculto');
+}
+
+function cerrarModalEditar() {
+  modalEditar.classList.add('oculto');
+}
+
+document.getElementById('btn-cancelar-editar').addEventListener('click', cerrarModalEditar);
+
+formEditarMedicamento.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const formData = new FormData(formEditarMedicamento);
+  const id = formData.get('id');
+  const payload = {
+    consumo_ant_2: Number(soloDigitos(formData.get('consumo_ant_2'))) || 0,
+    consumo_ant_1: Number(soloDigitos(formData.get('consumo_ant_1'))) || 0,
+    observaciones: formData.get('observaciones'),
+  };
+
+  const { error } = await supabaseClient.from('medicamento').update(payload).eq('id', id);
+
+  if (error) {
+    mostrarMensaje('editar-medicamento-mensaje', `Error: ${error.message}`, 'error');
+    return;
   }
 
-  const filas = convenios
-    .map(
-      (c) => `
-      <tr>
-        <td>${c.id_convenio ?? '-'}</td>
-        <td>${c.proveedor?.nombre_proveedor ?? '-'}</td>
-        <td>${formatearNumero(c.cantidad)}</td>
-        <td>$${formatearNumero(c.precio_unit_neto)}</td>
-        <td>${formatearNumero(c.duracion_meses)}</td>
-        <td>$${formatearNumero(c.precio_total_conv)}</td>
-        <td>$${formatearNumero(c.precio_anual_conv)}</td>
-      </tr>`
-    )
-    .join('');
+  cerrarModalEditar();
+  formBuscar.requestSubmit();
+});
+
+function construirTablaComparativaConvenios(actual, nuevo) {
+  const fila = (etiqueta, valorActual, valorNuevo) => `
+    <tr>
+      <th>${etiqueta}</th>
+      <td>${valorActual}</td>
+      <td>${valorNuevo}</td>
+    </tr>`;
+
+  const dinero = (valor) => (valor === null || valor === undefined || valor === '' ? '-' : `$ ${formatearNumero(valor)}`);
+  const meses = (valor) => (valor === null || valor === undefined || valor === '' ? '-' : `${formatearNumero(valor)} MESES`);
 
   return `
-    <table>
-      <caption>${titulo}</caption>
+    <table class="tabla-convenios">
       <tr>
-        <th>ID convenio</th>
-        <th>Proveedor</th>
-        <th>Cantidad</th>
-        <th>Precio unit. neto</th>
-        <th>Duración (meses)</th>
-        <th>Precio total</th>
-        <th>Precio anual</th>
+        <th></th>
+        <th>CONVENIO ACTUAL</th>
+        <th>CONVENIO NUEVO</th>
       </tr>
-      ${filas}
+      ${fila('ID CONVENIO', actual?.id_convenio ?? '-', nuevo?.id_convenio ?? '-')}
+      ${fila('PROVEEDOR ADJUDICADO', actual?.proveedor?.nombre_proveedor ?? '-', nuevo?.proveedor?.nombre_proveedor ?? '-')}
+      ${fila('CANTIDAD', formatearNumero(actual?.cantidad), formatearNumero(nuevo?.cantidad))}
+      ${fila('PRECIO UNITARIO NETO', dinero(actual?.precio_unit_neto), dinero(nuevo?.precio_unit_neto))}
+      ${fila('DURACIÓN', meses(actual?.duracion_meses), meses(nuevo?.duracion_meses))}
+      ${fila('PRECIO TOTAL CONVENIO', dinero(actual?.precio_total_conv), dinero(nuevo?.precio_total_conv))}
+      ${fila('PRECIO ANUAL', dinero(actual?.precio_anual_conv), dinero(nuevo?.precio_anual_conv))}
     </table>`;
 }
 
@@ -372,12 +427,12 @@ const anioActual = new Date().getFullYear();
 const anioAnt1 = anioActual - 1;
 const anioAnt2 = anioActual - 2;
 
-document.getElementById('label-consumo-ant-1').textContent = `Consumo año ${anioAnt1}`;
-document.getElementById('label-consumo-ant-2').textContent = `Consumo año ${anioAnt2}`;
+document.getElementById('label-consumo-ant-1').textContent = `Consumo Año ${anioAnt1}`;
+document.getElementById('label-consumo-ant-2').textContent = `Consumo Año ${anioAnt2}`;
 
 const nombreMesActual = new Date().toLocaleDateString('es-CL', { month: 'long' });
 document.getElementById('label-consumo-actual').textContent =
-  `Consumo actual (${nombreMesActual} ${anioActual})`;
+  `Consumo Actual (${nombreMesActual} ${anioActual})`;
 
 const mesActualNumero = new Date().getMonth() + 1;
 const inputConsumoActual = formMedicamento.elements['consumo_actual'];
@@ -409,6 +464,11 @@ formMedicamento.addEventListener('submit', async (e) => {
   mostrarMensaje('medicamento-mensaje', 'Medicamento guardado correctamente.', 'ok');
   formMedicamento.reset();
   await cargarSelectsMedicamento();
+});
+
+document.getElementById('btn-limpiar-medicamento').addEventListener('click', () => {
+  formMedicamento.reset();
+  mostrarMensaje('medicamento-mensaje', '');
 });
 
 // --- Ingresar convenios (vigente y nuevo) ---
@@ -490,6 +550,12 @@ function configurarFormularioConvenio(formId, mensajeId, tabla) {
     mostrarMensaje(mensajeId, 'Convenio guardado correctamente.', 'ok');
     form.reset();
     form.querySelector('.campo-nuevo-proveedor').classList.add('oculto');
+  });
+
+  form.querySelector('.btn-limpiar-convenio').addEventListener('click', () => {
+    form.reset();
+    form.querySelector('.campo-nuevo-proveedor').classList.add('oculto');
+    mostrarMensaje(mensajeId, '');
   });
 }
 
