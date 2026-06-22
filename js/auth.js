@@ -63,6 +63,7 @@ formLogin.addEventListener('submit', async (e) => {
 
 btnLogout.addEventListener('click', () => {
   sessionStorage.removeItem(CLAVE_SESION);
+  limpiarTodosLosFormularios();
   mostrarLogin();
 });
 
