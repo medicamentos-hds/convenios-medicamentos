@@ -61,13 +61,13 @@
           </label>
         </div>
         <div class="fila-buscar" style="justify-content: right;">
-          <button type="submit">Buscar</button>
-          <button type="button" id="btn-limpiar">Limpiar</button>
+          <button type="submit">🔎 Buscar</button>
+          <button type="button" id="btn-limpiar">🧹 Limpiar</button>
         </div>
       </form>
       <div class="fila-buscar-acciones">
         <p id="buscar-mensaje" class="mensaje"></p>
-        <button type="button" id="btn-descargar-pdf" class="btn-pdf oculto">Descargar Resultados en PDF</button>
+        <button type="button" id="btn-descargar-pdf" class="btn-pdf oculto">📄 Descargar Resultados en PDF</button>
       </div>
       <div id="resultados"></div>
       <div id="paginador" class="paginador oculto"></div>
@@ -102,8 +102,8 @@
           <textarea name="observaciones" rows="3"></textarea>
         </label>
         <div class="fila-acciones-form">
-          <button type="submit">Guardar Medicamento</button>
-          <button type="button" id="btn-limpiar-medicamento">Limpiar</button>
+          <button type="submit">💾 Guardar Medicamento</button>
+          <button type="button" id="btn-limpiar-medicamento">🧹 Limpiar</button>
         </div>
       </form>
       <p id="medicamento-mensaje" class="mensaje"></p>
@@ -155,8 +155,8 @@
           </span>
         </label>
         <div class="fila-acciones-form">
-          <button type="submit">Guardar Convenio Vigente</button>
-          <button type="button" class="btn-limpiar-convenio">Limpiar</button>
+          <button type="submit">💾 Guardar Convenio Vigente</button>
+          <button type="button" class="btn-limpiar-convenio">🧹 Limpiar</button>
         </div>
       </form>
       <p id="convenio-act-mensaje" class="mensaje"></p>
@@ -208,8 +208,8 @@
           </span>
         </label>
         <div class="fila-acciones-form">
-          <button type="submit">Guardar Convenio Nuevo</button>
-          <button type="button" class="btn-limpiar-convenio">Limpiar</button>
+          <button type="submit">💾 Guardar Convenio Nuevo</button>
+          <button type="button" class="btn-limpiar-convenio">🧹 Limpiar</button>
         </div>
       </form>
       <p id="convenio-nuevo-mensaje" class="mensaje"></p>
@@ -218,14 +218,11 @@
     <!-- PROVEEDORES -->
     <section id="proveedores" class="tab-panel">
       <h2>Proveedores</h2>
-      <form id="form-nuevo-proveedor" class="data-form">
-        <label class="campo-completo">Nombre Proveedor
-          <input type="text" name="nombre_proveedor" required>
-        </label>
-        <button type="submit">Agregar Proveedor</button>
-      </form>
-      <p id="nuevo-proveedor-mensaje" class="mensaje"></p>
+      <button type="button" id="btn-abrir-nuevo-proveedor">➕ Agregar Proveedor</button>
       <p id="proveedores-mensaje" class="mensaje"></p>
+      <div class="fila-buscar">
+        <input type="text" id="buscar-proveedor" placeholder="Buscar proveedor por nombre...">
+      </div>
       <div id="lista-proveedores">Proveedores</div>
     </section>
   </main>
@@ -252,8 +249,8 @@
           <textarea name="observaciones" rows="3"></textarea>
         </label>
         <div class="modal-acciones">
-          <button type="button" id="btn-cancelar-editar">Cancelar</button>
-          <button type="submit">Guardar Cambios</button>
+          <button type="button" id="btn-cancelar-editar" class="btn-cancelar">❌ Cancelar</button>
+          <button type="submit">💾 Guardar Cambios</button>
         </div>
       </form>
       <p id="editar-medicamento-mensaje" class="mensaje"></p>
@@ -281,11 +278,27 @@
           <input type="text" inputmode="numeric" class="miles" name="duracion_meses">
         </label>
         <div class="modal-acciones">
-          <button type="button" id="btn-cancelar-editar-convenio">Cancelar</button>
-          <button type="submit">Guardar Cambios</button>
+          <button type="button" id="btn-cancelar-editar-convenio" class="btn-cancelar">❌ Cancelar</button>
+          <button type="submit">💾 Guardar Cambios</button>
         </div>
       </form>
       <p id="editar-convenio-mensaje" class="mensaje"></p>
+    </div>
+  </div>
+
+  <div id="modal-nuevo-proveedor" class="modal-overlay oculto">
+    <div class="modal-contenido">
+      <h3>Agregar Proveedor</h3>
+      <form id="form-nuevo-proveedor" class="data-form">
+        <label class="campo-completo">Nombre Proveedor
+          <input type="text" name="nombre_proveedor" required>
+        </label>
+        <div class="modal-acciones">
+          <button type="button" id="btn-cancelar-nuevo-proveedor" class="btn-cancelar">❌ Cancelar</button>
+          <button type="submit">💾 Guardar Proveedor</button>
+        </div>
+      </form>
+      <p id="nuevo-proveedor-mensaje" class="mensaje"></p>
     </div>
   </div>
 
@@ -298,8 +311,9 @@
           <input type="text" name="nombre_proveedor" required>
         </label>
         <div class="modal-acciones">
-          <button type="button" id="btn-cancelar-editar-proveedor">Cancelar</button>
-          <button type="submit">Guardar Cambios</button>
+          <button type="button" id="btn-cancelar-editar-proveedor" class="btn-cancelar">❌ Cancelar</button>
+          <button type="submit">💾 Guardar Cambios</button>
+
         </div>
       </form>
       <p id="editar-proveedor-mensaje" class="mensaje"></p>

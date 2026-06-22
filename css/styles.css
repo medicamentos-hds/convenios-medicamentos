@@ -193,6 +193,20 @@ main {
   border-radius: 6px;
 }
 
+#btn-abrir-nuevo-proveedor {
+  display: block;
+  margin-left: auto;
+}
+
+#buscar-proveedor {
+  flex: 1;
+  min-width: 200px;
+  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  margin-bottom: 1rem;
+}
+
 .inline-form #buscar-anio {
   padding: 0.5rem;
   border: 1px solid var(--color-border);
@@ -226,6 +240,9 @@ button:hover {
   background: #888;
 }
 
+.btn-cancelar {
+  background: #888;
+}
 .data-form {
   display: grid;
   grid-template-columns: repeat(3, 1fr);

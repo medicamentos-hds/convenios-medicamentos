@@ -184,7 +184,21 @@ function configurarSelectorProveedor(form) {
 }
 
 // --- Ingresar proveedor ---
+const modalNuevoProveedor = document.getElementById('modal-nuevo-proveedor');
 const formNuevoProveedor = document.getElementById('form-nuevo-proveedor');
+
+function abrirModalNuevoProveedor() {
+  formNuevoProveedor.reset();
+  mostrarMensaje('nuevo-proveedor-mensaje', '');
+  modalNuevoProveedor.classList.remove('oculto');
+}
+
+function cerrarModalNuevoProveedor() {
+  modalNuevoProveedor.classList.add('oculto');
+}
+
+document.getElementById('btn-abrir-nuevo-proveedor').addEventListener('click', abrirModalNuevoProveedor);
+document.getElementById('btn-cancelar-nuevo-proveedor').addEventListener('click', cerrarModalNuevoProveedor);
 
 formNuevoProveedor.addEventListener('submit', async (e) => {
   e.preventDefault();
@@ -199,21 +213,31 @@ formNuevoProveedor.addEventListener('submit', async (e) => {
     return;
   }
 
-  mostrarMensaje('nuevo-proveedor-mensaje', 'Proveedor agregado correctamente.', 'ok');
-  formNuevoProveedor.reset();
-  await Promise.all([cargarListaProveedores(), cargarSelectsProveedor()]);
+  cerrarModalNuevoProveedor();
+  await Promise.all([cargarListaProveedores(inputBuscarProveedor.value.trim()), cargarSelectsProveedor()]);
 });
 
 // --- Listado y edición de proveedores ---
 const listaProveedoresDiv = document.getElementById('lista-proveedores');
+const inputBuscarProveedor = document.getElementById('buscar-proveedor');
 const modalEditarProveedor = document.getElementById('modal-editar-proveedor');
 const formEditarProveedor = document.getElementById('form-editar-proveedor');
 
-async function cargarListaProveedores() {
-  const { data, error } = await supabaseClient
+inputBuscarProveedor.addEventListener('input', () => {
+  cargarListaProveedores(inputBuscarProveedor.value.trim());
+});
+
+async function cargarListaProveedores(filtroNombre) {
+  let query = supabaseClient
     .from('proveedor')
     .select('id, nombre_proveedor')
     .order('nombre_proveedor', { ascending: true });
+
+  if (filtroNombre) {
+    query = query.ilike('nombre_proveedor', `%${filtroNombre}%`);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     mostrarMensaje('proveedores-mensaje', `Error: ${error.message}`, 'error');
@@ -222,7 +246,7 @@ async function cargarListaProveedores() {
 
   if (!data.length) {
     listaProveedoresDiv.innerHTML = '';
-    mostrarMensaje('proveedores-mensaje', 'No hay proveedores registrados.');
+    mostrarMensaje('proveedores-mensaje', filtroNombre ? 'Sin resultados.' : 'No hay proveedores registrados.');
     return;
   }
 
@@ -240,7 +264,7 @@ async function cargarListaProveedores() {
       ${data.map((prov) => `
         <tr>
           <td>${prov.nombre_proveedor}</td>
-          <td><button type="button" class="btn-editar-convenio btn-editar-proveedor" data-id="${prov.id}">Editar</button></td>
+          <td><button type="button" class="btn-editar-convenio btn-editar-proveedor" data-id="${prov.id}">✏️ Editar</button></td>
         </tr>
       `).join('')}
     </table>`;
@@ -284,7 +308,7 @@ formEditarProveedor.addEventListener('submit', async (e) => {
   }
 
   cerrarModalEditarProveedor();
-  await Promise.all([cargarListaProveedores(), cargarSelectsProveedor()]);
+  await Promise.all([cargarListaProveedores(inputBuscarProveedor.value.trim()), cargarSelectsProveedor()]);
 });
 
 // --- Buscar medicamentos + convenios relacionados ---
@@ -305,17 +329,18 @@ formBuscar.addEventListener('submit', async (e) => {
   await buscarMedicamentos(texto, textoConvenio, anio);
 });
 
-document.getElementById('btn-limpiar').addEventListener('click', () => {
-  document.getElementById('buscar-texto').value = '';
-  document.getElementById('buscar-convenio').value = '';
-  document.getElementById('buscar-anio').value = '';
+function limpiarBusqueda() {
+  formBuscar.reset();
   resultadosDiv.innerHTML = '';
   paginadorDiv.innerHTML = '';
   paginadorDiv.classList.add('oculto');
   medicamentosEncontrados = [];
+  paginaActual = 1;
   mostrarMensaje('buscar-mensaje', '');
   btnDescargarPdf.classList.add('oculto');
-});
+}
+
+document.getElementById('btn-limpiar').addEventListener('click', limpiarBusqueda);
 
 function obtenerRangoFecha(anio) {
   if (!anio) return null;
@@ -528,8 +553,8 @@ async function construirCardMedicamento(med) {
     </div>
     <div class="card-detalle oculto">
       <div class="card-header-acciones">
-        <button type="button" class="btn-editar-medicamento">Editar</button>
-        <button type="button" class="btn-eliminar-medicamento">Eliminar</button>
+        <button type="button" class="btn-editar-medicamento">✏️ Editar</button>
+        <button type="button" class="btn-eliminar-medicamento">❌ Eliminar</button>
       </div>
       <table class="tabla-consumo">
         <tr>
@@ -791,10 +816,10 @@ function construirTablaComparativaConvenios(actual, nuevo) {
       ${fila(
         'ACCIONES',
         actual
-          ? '<button type="button" class="btn-editar-convenio" data-tabla="convenio_act">Editar</button> <button type="button" class="btn-eliminar-convenio" data-tabla="convenio_act">Eliminar</button>'
+          ? '<button type="button" class="btn-editar-convenio" data-tabla="convenio_act">✏️ Editar</button> <button type="button" class="btn-eliminar-convenio" data-tabla="convenio_act">❌ Eliminar</button>'
           : '-',
         nuevo
-          ? '<button type="button" class="btn-editar-convenio" data-tabla="convenio_nuevo">Editar</button> <button type="button" class="btn-eliminar-convenio" data-tabla="convenio_nuevo">Eliminar</button>'
+          ? '<button type="button" class="btn-editar-convenio" data-tabla="convenio_nuevo">✏️ Editar</button> <button type="button" class="btn-eliminar-convenio" data-tabla="convenio_nuevo">❌ Eliminar</button>'
           : '-'
       )}
     </table>`;
@@ -963,6 +988,33 @@ function formDataANumeros(formData, camposTexto) {
     }
   }
   return payload;
+}
+
+// --- Limpieza general (al cerrar sesión) ---
+function limpiarTodosLosFormularios() {
+  limpiarBusqueda();
+
+  formMedicamento.reset();
+  inputConsumoProy.value = '';
+  mostrarMensaje('medicamento-mensaje', '');
+
+  document.querySelectorAll('#form-convenio-act, #form-convenio-nuevo').forEach((form) => {
+    form.reset();
+    form.querySelector('.campo-nuevo-proveedor').classList.add('oculto');
+    form.querySelector('.input-nuevo-proveedor').required = false;
+  });
+  mostrarMensaje('convenio-act-mensaje', '');
+  mostrarMensaje('convenio-nuevo-mensaje', '');
+
+  formNuevoProveedor.reset();
+  inputBuscarProveedor.value = '';
+  mostrarMensaje('nuevo-proveedor-mensaje', '');
+
+  cerrarModalEditar();
+  cerrarModalEditarConvenio();
+  cerrarModalEditarProveedor();
+  cerrarModalNuevoProveedor();
+  modalProcesandoPdf.classList.add('oculto');
 }
 
 // --- Inicialización ---
