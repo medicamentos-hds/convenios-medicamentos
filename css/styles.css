@@ -368,6 +368,18 @@ button:hover {
   margin: 0;
 }
 
+.card-header-acciones {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.btn-eliminar-medicamento {
+  background: #c0392b;
+  color: #fff;
+  border-color: #c0392b;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -421,11 +433,18 @@ button:hover {
   text-align: center;
 }
 
-.btn-editar-convenio {
+.btn-editar-convenio,
+.btn-eliminar-convenio {
   padding: 0.15rem 0.5rem;
   font-size: 0.75rem;
   font-weight: normal;
   margin-left: 0.4rem;
+}
+
+.btn-eliminar-convenio {
+  background: #c0392b;
+  color: #fff;
+  border-color: #c0392b;
 }
 
 .tabla-convenios td {
@@ -434,6 +453,23 @@ button:hover {
 
 .tabla-convenios tr th {
   background: #e3e6e5;
+}
+
+.campo-con-boton {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.campo-con-boton select {
+  flex: 1;
+}
+
+.btn-refrescar-medicamento {
+  flex-shrink: 0;
+  padding: 0.3rem 0.55rem;
+  line-height: 1;
+  font-size: 1rem;
 }
 
 @media (max-width: 600px) {

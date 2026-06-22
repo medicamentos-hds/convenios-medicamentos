@@ -129,6 +129,10 @@ async function cargarSelectsMedicamento() {
     .forEach((select) => poblarSelect(select, idsConvenioNuevo));
 }
 
+document.querySelectorAll('.btn-refrescar-medicamento').forEach((btn) => {
+  btn.addEventListener('click', () => cargarSelectsMedicamento());
+});
+
 // --- Selects de proveedor (para formularios de convenio) ---
 const VALOR_NUEVO_PROVEEDOR = '__nuevo__';
 
@@ -440,7 +444,10 @@ async function construirCardMedicamento(med) {
   card.innerHTML = `
     <div class="card-header">
       <h3>${med.nombre_med}${med.fecha_actual ? ` (${med.fecha_actual.slice(0, 4)})` : ''}</h3>
-      <button type="button" class="btn-editar-medicamento">Editar</button>
+      <div class="card-header-acciones">
+        <button type="button" class="btn-editar-medicamento">Editar</button>
+        <button type="button" class="btn-eliminar-medicamento">Eliminar</button>
+      </div>
     </div>
     <table class="tabla-consumo">
       <tr>
@@ -479,11 +486,18 @@ async function construirCardMedicamento(med) {
   `;
 
   card.querySelector('.btn-editar-medicamento').addEventListener('click', () => abrirModalEditar(med));
+  card.querySelector('.btn-eliminar-medicamento').addEventListener('click', () => eliminarMedicamento(med));
 
   card.querySelectorAll('.btn-editar-convenio').forEach((btn) => {
     const tabla = btn.dataset.tabla;
     const convenio = tabla === 'convenio_act' ? actRes.data?.[0] : nuevoRes.data?.[0];
     btn.addEventListener('click', () => abrirModalEditarConvenio(tabla, convenio));
+  });
+
+  card.querySelectorAll('.btn-eliminar-convenio').forEach((btn) => {
+    const tabla = btn.dataset.tabla;
+    const convenio = tabla === 'convenio_act' ? actRes.data?.[0] : nuevoRes.data?.[0];
+    btn.addEventListener('click', () => eliminarConvenio(tabla, convenio));
   });
 
   card.querySelectorAll('.link-licitacion').forEach((link) => {
@@ -602,6 +616,53 @@ formEditarConvenio.addEventListener('submit', async (e) => {
   formBuscar.requestSubmit();
 });
 
+async function eliminarConvenio(tabla, convenio) {
+  if (!convenio) return;
+  if (!confirm('¿Está seguro de que desea eliminar este convenio?')) return;
+
+  const { data, error } = await supabaseClient.from(tabla).delete().eq('id', convenio.id).select();
+
+  if (error) {
+    alert(`Error: ${error.message}`);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    alert('No se pudo eliminar el convenio. Verifique que existan permisos (política RLS) de eliminación en la base de datos.');
+    return;
+  }
+
+  formBuscar.requestSubmit();
+}
+
+async function eliminarMedicamento(med) {
+  if (!confirm('¿Está seguro de que desea eliminar este medicamento y sus convenios asociados? El proveedor no se eliminará.')) return;
+
+  const [actDel, nuevoDel] = await Promise.all([
+    supabaseClient.from('convenio_act').delete().eq('id_medicamento', med.id),
+    supabaseClient.from('convenio_nuevo').delete().eq('id_medicamento', med.id),
+  ]);
+
+  if (actDel.error || nuevoDel.error) {
+    alert(`Error: ${(actDel.error || nuevoDel.error).message}`);
+    return;
+  }
+
+  const { data, error } = await supabaseClient.from('medicamento').delete().eq('id', med.id).select();
+
+  if (error) {
+    alert(`Error: ${error.message}`);
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    alert('No se pudo eliminar el medicamento. Verifique que existan permisos (política RLS) de eliminación en la base de datos.');
+    return;
+  }
+
+  formBuscar.requestSubmit();
+}
+
 function enlaceLicitacion(idConvenio) {
   if (!idConvenio) return '-';
   return `<a href="#" class="link-licitacion" data-id-convenio="${idConvenio}">${idConvenio}</a>`;
@@ -622,8 +683,8 @@ function construirTablaComparativaConvenios(actual, nuevo) {
     <table class="tabla-convenios">
       <tr>
         <th></th>
-        <th>CONVENIO ACTUAL${actual ? ' <button type="button" class="btn-editar-convenio" data-tabla="convenio_act">Editar</button>' : ''}</th>
-        <th>CONVENIO NUEVO${nuevo ? ' <button type="button" class="btn-editar-convenio" data-tabla="convenio_nuevo">Editar</button>' : ''}</th>
+        <th>CONVENIO ACTUAL</th>
+        <th>CONVENIO NUEVO</th>
       </tr>
       ${fila('ID CONVENIO', enlaceLicitacion(actual?.id_convenio), enlaceLicitacion(nuevo?.id_convenio))}
       ${fila('PROVEEDOR ADJUDICADO', actual?.proveedor?.nombre_proveedor ?? '-', nuevo?.proveedor?.nombre_proveedor ?? '-')}
@@ -632,6 +693,15 @@ function construirTablaComparativaConvenios(actual, nuevo) {
       ${fila('DURACIÓN', meses(actual?.duracion_meses), meses(nuevo?.duracion_meses))}
       ${fila('PRECIO TOTAL CONVENIO', dinero(actual?.precio_total_conv), dinero(nuevo?.precio_total_conv))}
       ${fila('PRECIO ANUAL', dinero(actual?.precio_anual_conv), dinero(nuevo?.precio_anual_conv))}
+      ${fila(
+        'ACCIONES',
+        actual
+          ? '<button type="button" class="btn-editar-convenio" data-tabla="convenio_act">Editar</button> <button type="button" class="btn-eliminar-convenio" data-tabla="convenio_act">Eliminar</button>'
+          : '-',
+        nuevo
+          ? '<button type="button" class="btn-editar-convenio" data-tabla="convenio_nuevo">Editar</button> <button type="button" class="btn-eliminar-convenio" data-tabla="convenio_nuevo">Eliminar</button>'
+          : '-'
+      )}
     </table>`;
 }
 

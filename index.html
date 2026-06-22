@@ -113,7 +113,10 @@
       <h2>Ingresar Convenio Vigente</h2>
       <form id="form-convenio-act" class="data-form" data-tabla="convenio_act">
         <label class="campo-completo">Medicamento
-          <select name="id_medicamento" required></select>
+          <span class="campo-con-boton">
+            <select name="id_medicamento" required></select>
+            <button type="button" class="btn-refrescar-medicamento" title="Actualizar listado de medicamentos">⟳</button>
+          </span>
         </label>
         <label class="campo-completo">ID Convenio
           <input type="text" name="id_convenio" required>
@@ -163,7 +166,10 @@
       <h2>Ingresar Convenio Nuevo</h2>
       <form id="form-convenio-nuevo" class="data-form" data-tabla="convenio_nuevo">
         <label class="campo-completo">Medicamento
-          <select name="id_medicamento" required></select>
+          <span class="campo-con-boton">
+            <select name="id_medicamento" required></select>
+            <button type="button" class="btn-refrescar-medicamento" title="Actualizar listado de medicamentos">⟳</button>
+          </span>
         </label>
         <label class="campo-completo">ID Convenio
           <input type="text" name="id_convenio" required>
@@ -227,7 +233,7 @@
   <div id="modal-editar-medicamento" class="modal-overlay oculto">
     <div class="modal-contenido">
       <h3>Editar Medicamento</h3>
-      <form id="form-editar-medicamento" class="data-form">
+      <form id="form-editar-medicamento" class="data-form" style="grid-template-columns: repeat(2, 1fr);" >
         <input type="hidden" name="id">
         <label><span id="label-editar-consumo-ant-2">Consumo Año Anterior 2</span>
           <input type="text" inputmode="numeric" class="miles" name="consumo_ant_2">
@@ -256,7 +262,7 @@
   <div id="modal-editar-convenio" class="modal-overlay oculto">
     <div class="modal-contenido">
       <h3>Editar Convenio</h3>
-      <form id="form-editar-convenio" class="data-form">
+      <form id="form-editar-convenio" class="data-form" style="grid-template-columns: repeat(1, 1fr);">
         <input type="hidden" name="id">
         <label>Cantidad
           <input type="text" inputmode="numeric" class="miles" name="cantidad">
