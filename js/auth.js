@@ -42,7 +42,7 @@ formLogin.addEventListener('submit', async (e) => {
 
   const { data, error } = await supabaseClient
     .from('user')
-    .select('user')
+    .select('*')
     .eq('user', usuario)
     .eq('password', password)
     .maybeSingle();
@@ -57,8 +57,8 @@ formLogin.addEventListener('submit', async (e) => {
     return;
   }
 
-  sessionStorage.setItem(CLAVE_SESION, usuario);
-  mostrarApp();
+  sessionStorage.setItem(CLAVE_SESION, data.nombre);
+  mostrarApp(data.name);
 });
 
 btnLogout.addEventListener('click', () => {
@@ -67,7 +67,8 @@ btnLogout.addEventListener('click', () => {
 });
 
 if (sessionStorage.getItem(CLAVE_SESION)) {
-  mostrarApp();
+  const data = sessionStorage.getItem(CLAVE_SESION);
+  mostrarApp(data.name);
 } else {
   mostrarLogin();
 }
