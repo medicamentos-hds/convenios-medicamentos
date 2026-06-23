@@ -104,6 +104,9 @@
 
   function updateMessage(id, text) {
     const el = document.querySelector(`#${id} .bubble`)
-    if (el) { el.className = 'bubble'; el.textContent = text }
+    if (el) { 
+      el.className = 'bubble'; 
+      el.innerHTML =  marked.parse(text) 
+    }
   }
   
