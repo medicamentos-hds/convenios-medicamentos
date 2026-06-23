@@ -10,6 +10,19 @@
   // Historial de la conversación (se mantiene en memoria mientras dure la sesión)
   let chatHistory = []
 
+  // ─── Mostrar/ocultar el panel de chat ───────────────────────────────────
+  const chatPanel = document.getElementById('chat-panel')
+  const chatToggleBtn = document.getElementById('chat-toggle-btn')
+  const chatCloseBtn = document.getElementById('chat-close-btn')
+
+  chatToggleBtn.addEventListener('click', () => {
+    chatPanel.classList.toggle('oculto')
+  })
+
+  chatCloseBtn.addEventListener('click', () => {
+    chatPanel.classList.add('oculto')
+  })
+
   // ─── Captura de ENTER ────────────────────────────────────────────────────
   const input = document.getElementById('user-input');
 
@@ -85,7 +98,7 @@
     div.className = `message message-${role}`
     div.id = id
     div.innerHTML = `
-      <div class="avatar">${isUser ? 'TU' : '🤖'}</div>
+      <div class="avatar">${isUser ? 'TU' : 'C'}</div>
       <div>
         <div class="bubble">${text}</div>
         <div class="meta">${isUser ? 'Tú' : 'Agente'} · ${horas}:${minutos}</div>
@@ -101,7 +114,7 @@
     div.className = 'message message-assistant'
     div.id = id
     div.innerHTML = `
-      <div class="avatar">🤖</div>
+      <div class="avatar">👩🏻‍💻</div>
       <div>
         <div class="bubble typing">
           <span></span><span></span><span></span>
@@ -142,5 +155,6 @@ function updateSessionCounter() {
   const total = sessionTokens.input + sessionTokens.output
   // Precio aproximado con Claude Sonnet 4.6
   const cost = ((sessionTokens.input * 3 + sessionTokens.output * 15) / 1_000_000)
-  el.textContent = `Sesión: ${total.toLocaleString()} tokens · ~$${cost.toFixed(4)} USD`
+  const costClp = cost*900
+  el.textContent = `Sesión: ${total.toLocaleString()} tokens · ~$${cost.toFixed(4)} USD · ~$${costClp.toFixed(0)} CLP`
 }
