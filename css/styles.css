@@ -580,7 +580,7 @@ button:hover {
   min-height: 100px;
   max-height: 500px;
   overflow-y: auto;
-  width: 60%;
+  width: 80%;
 }
 
 /* ── Burbujas ── */
@@ -641,7 +641,7 @@ button:hover {
   align-items: flex-end;
   justify-content: center;
   gap: 0.5rem;
-  width: 60%;
+  width: 80%;
 }
   .user-input {
     flex: 1;
