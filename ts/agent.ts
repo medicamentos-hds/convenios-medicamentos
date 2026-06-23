@@ -161,8 +161,15 @@ A modo explicativo, en la tabla medicamento,la fecha actual indica el año de co
     .map(b => b.text)
     .join('\n')
 
+    // ← usage viene directo de la respuesta de Anthropic
+    const usage = {
+      input_tokens:  response.usage.input_tokens,
+      output_tokens: response.usage.output_tokens,
+      total_tokens:  response.usage.input_tokens + response.usage.output_tokens
+    }
+
   return new Response(
-    JSON.stringify({ reply: finalText }),
+    JSON.stringify({ reply: finalText, usage }),
     {
       headers: {
         'Content-Type': 'application/json',

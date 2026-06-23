@@ -48,10 +48,20 @@
         })
       })
 
-      const { reply } = await response.json()
+      const { reply, usage } = await response.json()
 
       // Actualizamos el indicador con la respuesta real
       updateMessage(loadingId, reply)
+
+      // Muestra los tokens de esta consulta
+      if (usage) {
+       appendTokenInfo(usage)
+      }
+
+      // Acumula el total de la sesión
+      sessionTokens.input  += usage.input_tokens
+      sessionTokens.output += usage.output_tokens
+      updateSessionCounter()
 
       // Guardamos el intercambio en el historial local
       chatHistory.push(
@@ -109,4 +119,28 @@
       el.innerHTML =  marked.parse(text) 
     }
   }
-  
+
+
+  // Contador acumulado de la sesión
+let sessionTokens = { input: 0, output: 0 }
+
+function appendTokenInfo(usage) {
+  const div = document.createElement('div')
+  div.style.cssText = `
+    font-size: 11px;
+    color: #aaa;
+    text-align: right;
+    padding: 0 4px 8px;
+  `
+  div.textContent = `↑ ${usage.input_tokens} · ↓ ${usage.output_tokens} tokens`
+  document.getElementById('messages').appendChild(div)
+}
+
+function updateSessionCounter() {
+  const el = document.getElementById('session-tokens')
+  if (!el) return
+  const total = sessionTokens.input + sessionTokens.output
+  // Precio aproximado con Claude Sonnet 4.6
+  const cost = ((sessionTokens.input * 3 + sessionTokens.output * 15) / 1_000_000)
+  el.textContent = `Sesión: ${total.toLocaleString()} tokens · ~$${cost.toFixed(4)} USD`
+}
