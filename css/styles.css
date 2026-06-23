@@ -663,3 +663,10 @@ button:hover {
     cursor: pointer;
   }
   .send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .session-tokens {
+    font-size: 11px;
+      color: #aaa;
+      text-align: right;
+      padding: 4px 4px 0;
+  }
