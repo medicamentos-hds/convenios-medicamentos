@@ -32,7 +32,7 @@
     input.value = ''
 
     // Indicador de carga
-    const loadingId = appendMessage('assistant', '...')
+    const loadingId = appendTyping('assistant', '...')
 
     try {
       const response = await fetch(AGENT_URL, {
@@ -69,7 +69,7 @@
     const ahora = new Date();
     const horas = String(ahora.getHours()).padStart(2, '0');
     const minutos = String(ahora.getMinutes()).padStart(2, '0');
-    const id  = `msg-${Date.now()}`
+    const id  = `${role}-msg-${Date.now()}`
     const isUser = role === 'user'
     const div = document.createElement('div')
     div.className = `message message-${role}`
@@ -82,16 +82,16 @@
       </div>`
     document.getElementById('messages').appendChild(div)
     div.scrollIntoView({ behavior: 'smooth' })
-    return role+"-"+id
+    return id
   }
 
   function appendTyping() {
-    const id  = `msg-${Date.now()}`
+    const id  = `assistant-msg-${Date.now()}`
     const div = document.createElement('div')
     div.className = 'message message-assistant'
     div.id = id
     div.innerHTML = `
-      <div class="avatar">AI</div>
+      <div class="avatar">🤖</div>
       <div>
         <div class="bubble typing">
           <span></span><span></span><span></span>
