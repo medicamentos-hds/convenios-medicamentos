@@ -43,7 +43,6 @@
         <button class="tab-btn" data-tab="ingresar-convenio-act">Ingresar Convenio Vigente</button>
         <button class="tab-btn" data-tab="ingresar-convenio-nuevo">Ingresar Convenio Nuevo</button>
         <button class="tab-btn" data-tab="proveedores">Proveedores</button>
-		<button class="tab-btn" data-tab="agente">✨</button>
       </nav>
     </header>
 
@@ -226,21 +225,31 @@
       </div>
       <div id="lista-proveedores">Proveedores</div>
     </section>
-	
-	<!-- AGENET IA -->
-	<section id="agente" class="tab-panel">
-		<h2>Agente IA</h2>
-    <div class="chat-container">
-      <div id="messages" class="messages" >
+  </main>
+
+  <!-- AGENTE IA: botón flotante + panel de chat -->
+  <button type="button" id="chat-toggle-btn" class="chat-toggle-btn" title="Agente IA" aria-label="Abrir Agente IA">👩🏻‍💻</button>
+  <div id="chat-panel" class="chat-panel oculto">
+    <div class="chat-panel-header">
+      <h3>✨ Cecilia ✨</h3>
+      <button type="button" id="chat-close-btn" class="chat-close-btn" aria-label="Cerrar Agente IA">✕</button>
     </div>
-    <div id="session-tokens" class="session-tokens"></div>
-    <div class="input-row">
-      <input id="user-input" class="user-input" type="text" placeholder="Ej: ¿Cuántos convenios nuevos hay?">
-      <button id="send-btn" onclick="sendMessage()">✨</button>
+    <div class="chat-container">
+      <div id="messages" class="messages">
+        <div class="message message-assistant">
+          <div class="avatar">C</div>
+          <div>
+            <div class="bubble">🙋🏻‍♀️¡Hola! Soy Cecilia, tu asistente personal. ¿En qué puedo ayudarte hoy? ✨</div>
+          </div>
+        </div>
+      </div>
+      <div id="session-tokens" class="session-tokens"></div>
+      <div class="input-row">
+        <input id="user-input" class="user-input" type="text" placeholder="Escribe un mensaje...">
+        <button id="send-btn" onclick="sendMessage()">✨</button>
+      </div>
     </div>
   </div>
-	</section>
-  </main>
   </div>
 
   <div id="modal-editar-medicamento" class="modal-overlay oculto">

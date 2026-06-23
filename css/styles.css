@@ -578,9 +578,9 @@ button:hover {
   border-radius: 12px;
   padding: 16px;
   min-height: 100px;
-  max-height: 500px;
+  max-height: 50vh;
   overflow-y: auto;
-  width: 80%;
+  width: 100%;
 }
 
 /* ── Burbujas ── */
@@ -641,7 +641,7 @@ button:hover {
   align-items: flex-end;
   justify-content: center;
   gap: 0.5rem;
-  width: 80%;
+  width: 100%;
 }
   .user-input {
     flex: 1;
@@ -670,3 +670,68 @@ button:hover {
       text-align: right;
       padding: 4px 4px 0;
   }
+
+/* ── Botón flotante del Agente IA ── */
+.chat-toggle-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-primary);
+  color: white;
+  font-size: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  z-index: 1000;
+}
+
+/* ── Panel flotante del Agente IA ── */
+.chat-panel {
+  position: fixed;
+  bottom: 92px;
+  right: 24px;
+  width: 800px;
+  max-width: calc(100vw - 32px);
+  max-height: 70vh;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 999;
+}
+
+.chat-panel.oculto { display: none; }
+
+.chat-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background: var(--color-primary);
+  color: white;
+  flex-shrink: 0;
+}
+
+.chat-panel-header h3 { margin: 0; font-size: 1rem; }
+
+.chat-close-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chat-panel .chat-container {
+  padding: 1rem;
+  overflow-y: auto;
+}
