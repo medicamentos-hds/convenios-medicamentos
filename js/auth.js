@@ -24,6 +24,7 @@ function mostrarApp(nombre) {
   cargarSelectsMedicamento();
   cargarSelectsProveedor();
   cargarListaProveedores();
+  getDolarHoy();
 }
 
 function mostrarLogin() {
@@ -63,6 +64,7 @@ formLogin.addEventListener('submit', async (e) => {
 
 btnLogout.addEventListener('click', () => {
   sessionStorage.removeItem(CLAVE_SESION);
+  sessionStorage.removeItem(CLAVE_DOLAR);
   limpiarTodosLosFormularios();
   mostrarLogin();
 });

@@ -4,21 +4,21 @@ Sitio estático (HTML/CSS/JS puro) para buscar medicamentos y registrar convenio
 
 ## Estructura
 
-- `index.html` — UI con pestañas: Buscar, Ingresar Medicamento, Ingresar Convenio Vigente, Ingresar Convenio Nuevo, Proveedores.
+- `index.html` — UI con pestañas: Buscar, Ingresar Medicamento, Ingresar Convenio Vigente, Ingresar Convenio Nuevo, Proveedores; más el panel flotante del Agente IA.
 - `css/styles.css` — estilos.
-- `js/config.js` — credenciales de Supabase (NO se sube al repo, está en `.gitignore`).
-- `js/config.example.js` — plantilla de `config.js` para nuevos clones.
+- `js/configSupabase.js` — credenciales de Supabase (NO se sube al repo, está en `.gitignore`).
 - `js/supabaseClient.js` — inicializa el cliente de Supabase.
 - `js/app.js` — lógica de búsqueda, formularios y cálculos automáticos.
 - `js/auth.js` — pantalla de login y control de acceso a la app.
+- `js/agent.js` — panel de chat del Agente IA (Cecilia) y consulta del valor del dólar.
+- `ts/agent.ts` — Edge Function de Supabase que conversa con Claude y consulta la base de datos (se despliega como `chat-agent`).
+- `ts/tipoCambio.ts` — Edge Function de Supabase que entrega el valor actual del dólar (se despliega como `tipoCambio`).
 - `sql/politicas_rls.sql` — políticas de Row Level Security para Supabase.
-- `sql/agregar_columna_observaciones.sql` — agrega la columna `observaciones` a `medicamento`.
-- `assets/logo-hds.jpg` — logo mostrado en el header.
-- `database.txt` — esquema de referencia de las tablas en Supabase.
+- `assets/` — logos e iconos usados en la UI (login, header, botón de descarga PDF).
 
 ## Esquema de datos (Supabase)
 
-- `medicamento` — datos del medicamento, sus consumos históricos/proyectados y `observaciones` (texto libre; requiere ejecutar `sql/agregar_columna_observaciones.sql` si la columna no existe aún).
+- `medicamento` — datos del medicamento, sus consumos históricos/proyectados y `observaciones` (texto libre).
 - `convenio_act` — convenio vigente asociado a un medicamento (`id_medicamento`) y a un proveedor (`id_proveedor`, nullable).
 - `convenio_nuevo` — duplicado de `convenio_act` para el convenio nuevo en evaluación.
 - `proveedor` — catálogo de proveedores (`id`, `nombre_proveedor`), referenciado por `id_proveedor` en ambas tablas de convenio.
@@ -26,7 +26,13 @@ Sitio estático (HTML/CSS/JS puro) para buscar medicamentos y registrar convenio
 
 ## Configuración
 
-1. Copia `js/config.example.js` como `js/config.js`.
+1. Crea `js/configSupabase.js` con el siguiente contenido:
+   ```js
+   const SUPABASE_CONFIG = {
+     url: 'https://<tu-proyecto>.supabase.co',
+     anonKey: '<tu-anon-key>'
+   };
+   ```
 2. Completa `url` y `anonKey` con los datos de tu proyecto Supabase (Project Settings → API).
 3. Abre `index.html` en el navegador (o usa un servidor estático local, ej. `npx serve`).
 
@@ -40,9 +46,9 @@ Si el sitio es público y no quieres que cualquiera pueda insertar datos, consid
 
 ## Despliegue en GitHub Pages
 
-1. Sube el repositorio a GitHub (asegúrate de que `js/config.js` con tus credenciales reales **no** se suba si el repo es público y no quieres expuesta tu URL/key — aunque la anon key está diseñada para ser pública si RLS está bien configurado).
+1. Sube el repositorio a GitHub (asegúrate de que `js/configSupabase.js` con tus credenciales reales **no** se suba si el repo es público y no quieres expuesta tu URL/key — aunque la anon key está diseñada para ser pública si RLS está bien configurado).
 2. En el repo de GitHub: Settings → Pages → Build and deployment → Source: "Deploy from a branch", elige `main` y carpeta `/ (root)`.
-3. Si no quieres versionar `config.js`, puedes generarlo en un paso de GitHub Actions a partir de secrets del repositorio, o subirlo manualmente sabiendo que la anon key es pública por diseño.
+3. Si no quieres versionar `configSupabase.js`, puedes generarlo en un paso de GitHub Actions a partir de secrets del repositorio, o subirlo manualmente sabiendo que la anon key es pública por diseño.
 4. Accede a la URL que entrega GitHub Pages (`https://<usuario>.github.io/<repo>/`).
 
 ## Login
@@ -83,3 +89,11 @@ Si el sitio es público y no quieres que cualquiera pueda insertar datos, consid
 - Formulario para agregar un proveedor nuevo (inserta en `proveedor`).
 - Listado de todos los proveedores registrados, ordenados por nombre, con botón "Editar" por fila que abre un modal para actualizar `nombre_proveedor`.
 - Tanto el alta como la edición refrescan automáticamente los `<select>` de proveedor usados en los formularios de convenio.
+
+## Agente IA (Cecilia)
+
+- Botón flotante (`👩🏻‍💻`) abre un panel de chat donde se puede conversar con un agente impulsado por Claude.
+- El frontend (`js/agent.js`) llama a la Edge Function `chat-agent` (`ts/agent.ts`), que tiene acceso de solo lectura a la base de datos (vía una tool `query_database` restringida a `SELECT`) para responder preguntas sobre medicamentos, consumos y convenios.
+- Cada respuesta muestra los tokens consumidos y un contador acumulado de la sesión con el costo aproximado en USD y CLP.
+- El valor del dólar para la conversión a CLP se obtiene de la Edge Function `tipoCambio` (`ts/tipoCambio.ts`, que consulta `mindicador.cl`) una sola vez por sesión y se cachea en `sessionStorage` para no volver a consultarlo.
+- Ambas Edge Functions deben desplegarse en Supabase (`supabase functions deploy chat-agent` / `supabase functions deploy tipoCambio`) con las variables de entorno `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` y `ANTHROPIC_API_KEY` configuradas en el proyecto.
