@@ -30,8 +30,8 @@ jobs:
           VALOR_API_KEY: ${{ secrets.API_KEY }}
         run: |
           # Reemplaza los marcadores en tu archivo script.js con los valores reales
-          sed -i "s|___VALOR_API_URL___|${VALOR_API_URL}|g" js/config.js
-          sed -i "s|___VALOR_API_KEY___|${VALOR_API_KEY}|g" js/config.js
+          sed -i "s|___VALOR_API_URL___|${VALOR_API_URL}|g" js/configSupabase.js
+          sed -i "s|___VALOR_API_KEY___|${VALOR_API_KEY}|g" js/configSupabase.js
 
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5

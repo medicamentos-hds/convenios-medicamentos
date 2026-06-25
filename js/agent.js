@@ -6,6 +6,10 @@
 
   // URL de tu Edge Function
   const AGENT_URL = `${supabaseClient.supabaseUrl}/functions/v1/agent`
+  const TIPO_CAMBIO_URL = `${supabaseClient.supabaseUrl}/functions/v1/tipoCambio`
+
+  // Clave para cachear el valor del dólar en la sesión del browser
+  const CLAVE_DOLAR = 'convenios_medicamentos_dolar'
 
   // Historial de la conversación (se mantiene en memoria mientras dure la sesión)
   let chatHistory = []
@@ -114,7 +118,7 @@
     div.className = 'message message-assistant'
     div.id = id
     div.innerHTML = `
-      <div class="avatar">👩🏻‍💻</div>
+      <div class="avatar">C</div>
       <div>
         <div class="bubble typing">
           <span></span><span></span><span></span>
@@ -149,12 +153,39 @@ function appendTokenInfo(usage) {
   document.getElementById('messages').appendChild(div)
 }
 
-function updateSessionCounter() {
+async function updateSessionCounter() {
   const el = document.getElementById('session-tokens')
   if (!el) return
   const total = sessionTokens.input + sessionTokens.output
   // Precio aproximado con Claude Sonnet 4.6
   const cost = ((sessionTokens.input * 3 + sessionTokens.output * 15) / 1_000_000)
-  const costClp = cost*900
+  const dolarHoy = await getDolarHoy()
+  const costClp = cost * dolarHoy
   el.textContent = `Sesión: ${total.toLocaleString()} tokens · ~$${cost.toFixed(4)} USD · ~$${costClp.toFixed(0)} CLP`
+}
+
+// Consulta el valor del dólar y lo cachea en sessionStorage para no volver
+// a llamar a la Edge Function mientras dure la sesión del usuario.
+async function getDolarHoy() {
+  const cacheado = sessionStorage.getItem(CLAVE_DOLAR)
+  if (cacheado !== null) {
+    return Number(cacheado)
+  }
+
+  try {
+    const response = await fetch(TIPO_CAMBIO_URL, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${supabaseClient.supabaseKey}`
+      }
+    })
+    const data = await response.json()
+    sessionStorage.setItem(CLAVE_DOLAR, data.valor)
+    return data.valor
+  }
+  catch (error) {
+    console.error('Error al obtener el tipo de cambio:', error)
+    return 0
+  }
 }

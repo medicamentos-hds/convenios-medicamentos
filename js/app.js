@@ -320,7 +320,7 @@ const resultadosDiv = document.getElementById('resultados');
 const paginadorDiv = document.getElementById('paginador');
 const btnDescargarPdf = document.getElementById('btn-descargar-pdf');
 
-const RESULTADOS_POR_PAGINA = 5;
+const RESULTADOS_POR_PAGINA = 10;
 let medicamentosEncontrados = [];
 let paginaActual = 1;
 
@@ -620,8 +620,8 @@ async function construirCardMedicamento(med) {
   card.className = 'card';
 
   card.innerHTML = `
-    <button type="button" class="btn-ver-detalle-medicamento icon-collapse" title="Ver detalle" aria-expanded="false">▾</button>
     <div class="card-header">
+      <button type="button" class="btn-ver-detalle-medicamento icon-collapse" title="Ver detalle" aria-expanded="false">▾</button>
       <h3>${med.nombre_med}${med.fecha_actual ? ` (${med.fecha_actual.slice(0, 4)})` : ''}</h3>
     </div>
     <div class="card-detalle oculto">
