@@ -3,7 +3,7 @@
   // Permite llamar a tus Edge Functions pero NO da acceso directo a la BD.
   const SUPABASE_URL = 'https://xxxx.supabase.co'
   const SUPABASE_ANON_KEY = 'eyJ...'  // ← sí puede estar aquí, es pública
-
+ 
   // URL de tu Edge Function
   const AGENT_URL = `${supabaseClient.supabaseUrl}/functions/v1/agent`
   const TIPO_CAMBIO_URL = `${supabaseClient.supabaseUrl}/functions/v1/tipoCambio`
