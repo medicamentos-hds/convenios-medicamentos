@@ -57,13 +57,25 @@ function lineaAnalisis(variacion, anioNuevo, anioViejo, isPdf) {
   if(isPdf){
       tipo = variacion >= 0 ? 'AUMENTO (+)' : 'REDUCCIÓN (-)';
   }
-  return `${tipo} ${Math.abs(variacion).toFixed(2)}% ${anioNuevo} respecto del ${anioViejo}`;
+  return `${tipo} ${Math.abs(variacion).toFixed(2)}% en consumo ${anioNuevo} respecto del ${anioViejo}`;
 }
 
-function construirAnalisis(med) {
+function lineaAnalisisPresupuesto(variacion, isPdf) {
+  if (variacion === null) {
+    return 'Sin datos suficientes para comparar con el valor presupuestado.';
+  }
+  var tipo = variacion >= 0 ? '⚠️⬆️' : '✔️⬇️';
+  if (isPdf) {
+    tipo = variacion >= 0 ? 'SOBRE PRESUPUESTO (+)' : 'BAJO PRESUPUESTO (-)';
+  }
+  return `${tipo} ${Math.abs(variacion).toFixed(2)}% del precio total del convenio nuevo respecto del valor presupuestado`;
+}
+
+function construirAnalisis(med, nuevo) {
   const anioActualConsumo = med.anio_ant_1 ? med.anio_ant_1 + 1 : null;
   const variacion1 = calcularVariacion(med.consumo_ant_1, med.consumo_ant_2);
   const variacion2 = calcularVariacion(med.consumo_proy, med.consumo_ant_1);
+  const variacionPresupuesto = calcularVariacion(nuevo?.precio_total_conv, nuevo?.valor_presupuestado);
 
   return `
     <table class="tabla-analisis">
@@ -71,7 +83,8 @@ function construirAnalisis(med) {
         <th>ANÁLISIS</th>
         <td>
           ${lineaAnalisis(variacion1, med.anio_ant_1, med.anio_ant_2, false)}<br>
-          ${lineaAnalisis(variacion2, anioActualConsumo, med.anio_ant_1, false)}
+          ${lineaAnalisis(variacion2, anioActualConsumo, med.anio_ant_1, false)}<br>
+          ${lineaAnalisisPresupuesto(variacionPresupuesto, false)}
         </td>
       </tr>
     </table>`;
@@ -416,6 +429,7 @@ btnDescargarPdf.addEventListener('click', async () => {
       const anioActualConsumo = med.anio_ant_1 ? med.anio_ant_1 + 1 : null;
       const variacion1 = calcularVariacion(med.consumo_ant_1, med.consumo_ant_2);
       const variacion2 = calcularVariacion(med.consumo_proy, med.consumo_ant_1);
+      const variacionPresupuesto = calcularVariacion(nuevo?.precio_total_conv, nuevo?.valor_presupuestado);
 
       pdf.autoTable({
         startY: posicionY,
@@ -423,7 +437,7 @@ btnDescargarPdf.addEventListener('click', async () => {
         styles: { fontSize: 9 },
         body: [[
           'Análisis',
-          `${lineaAnalisis(variacion1, med.anio_ant_1, med.anio_ant_2, true)}\n${lineaAnalisis(variacion2, anioActualConsumo, med.anio_ant_1, true)}`,
+          `${lineaAnalisis(variacion1, med.anio_ant_1, med.anio_ant_2, true)}\n${lineaAnalisis(variacion2, anioActualConsumo, med.anio_ant_1, true)}\n${lineaAnalisisPresupuesto(variacionPresupuesto, true)}`,
         ]],
       });
       posicionY = pdf.lastAutoTable.finalY + 3;
@@ -441,6 +455,7 @@ btnDescargarPdf.addEventListener('click', async () => {
           ['Duración', mesesPdf(actual?.duracion_meses), mesesPdf(nuevo?.duracion_meses)],
           ['Precio total convenio', dineroPdf(actual?.precio_total_conv), dineroPdf(nuevo?.precio_total_conv)],
           ['Precio anual', dineroPdf(actual?.precio_anual_conv), dineroPdf(nuevo?.precio_anual_conv)],
+          ['Precio presupuestado', dineroPdf(actual?.valor_presupuestado), dineroPdf(nuevo?.valor_presupuestado)],
         ],
       });
       posicionY = pdf.lastAutoTable.finalY + 3;
@@ -653,7 +668,7 @@ async function construirCardMedicamento(med) {
           <td>${formatearNumero(med.consumo_ant_1)}</td>
         </tr>
       </table>
-      ${construirAnalisis(med)}
+      ${construirAnalisis(med, nuevo)}
       ${construirTablaComparativaConvenios(actRes.data?.[0], nuevoRes.data?.[0])}
       <table class="tabla-consumo">
         <tr>
@@ -760,14 +775,22 @@ formEditarMedicamento.addEventListener('submit', async (e) => {
 const modalEditarConvenio = document.getElementById('modal-editar-convenio');
 const formEditarConvenio = document.getElementById('form-editar-convenio');
 
+const campoValorPresupuestado = formEditarConvenio.querySelector('.campo-valor-presupuestado');
+const inputValorPresupuestado = formEditarConvenio.elements['valor_presupuestado'];
+
 function abrirModalEditarConvenio(tabla, convenio) {
   if (!convenio) return;
+  const esConvenioNuevo = tabla === 'convenio_nuevo';
   formEditarConvenio.dataset.tabla = tabla;
   formEditarConvenio.elements['id'].value = convenio.id;
   formEditarConvenio.elements['id_convenio'].value = convenio.id_convenio ?? '';
   formEditarConvenio.elements['cantidad'].value = formatoMiles(String(convenio.cantidad ?? 0));
   formEditarConvenio.elements['precio_unit_neto'].value = formatoMiles(String(convenio.precio_unit_neto ?? 0));
   formEditarConvenio.elements['duracion_meses'].value = formatoMiles(String(convenio.duracion_meses ?? 0));
+  campoValorPresupuestado.classList.toggle('oculto', !esConvenioNuevo);
+  inputValorPresupuestado.value = esConvenioNuevo
+    ? formatoMiles(String(convenio.valor_presupuestado ?? 0))
+    : '';
   mostrarMensaje('editar-convenio-mensaje', '');
   modalEditarConvenio.classList.remove('oculto');
 }
@@ -797,6 +820,10 @@ formEditarConvenio.addEventListener('submit', async (e) => {
     precio_total_conv: precioTotal,
     precio_anual_conv: precioAnual,
   };
+
+  if (tabla === 'convenio_nuevo') {
+    payload.valor_presupuestado = Number(soloDigitos(formData.get('valor_presupuestado'))) || 0;
+  }
 
   const { error } = await supabaseClient.from(tabla).update(payload).eq('id', id);
 
@@ -886,6 +913,7 @@ function construirTablaComparativaConvenios(actual, nuevo) {
       ${fila('DURACIÓN', meses(actual?.duracion_meses), meses(nuevo?.duracion_meses))}
       ${fila('PRECIO TOTAL CONVENIO', dinero(actual?.precio_total_conv), dinero(nuevo?.precio_total_conv))}
       ${fila('PRECIO ANUAL', dinero(actual?.precio_anual_conv), dinero(nuevo?.precio_anual_conv))}
+      ${fila('VALOR PRESUPUESTADO', dinero(actual?.valor_presupuestado), dinero(nuevo?.valor_presupuestado))}
       ${fila(
         'ACCIONES',
         actual
@@ -932,6 +960,24 @@ formMedicamento.addEventListener('submit', async (e) => {
   payload.anio_ant_2 = anioAnt2;
   payload.fecha_actual = new Date().toISOString().slice(0, 10);
   payload.consumo_proy = Number(soloDigitos(inputConsumoProy.value)) || 0;
+
+  if (payload.codigo_med) {
+    const { data: existente, error: errorExistente } = await supabaseClient
+      .from('medicamento')
+      .select('id')
+      .eq('codigo_med', payload.codigo_med)
+      .maybeSingle();
+
+    if (errorExistente) {
+      mostrarMensaje('medicamento-mensaje', `Error: ${errorExistente.message}`, 'error');
+      return;
+    }
+
+    if (existente) {
+      mostrarMensaje('medicamento-mensaje', `Ya existe un medicamento con el código ${payload.codigo_med}.`, 'error');
+      return;
+    }
+  }
 
   const { error } = await supabaseClient.from('medicamento').insert(payload);
 
