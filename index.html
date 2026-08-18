@@ -208,6 +208,12 @@
             <input type="text" inputmode="numeric" class="miles" name="precio_anual_conv" readonly disabled>
           </span>
         </label>
+        <label>Precio Presupuestado
+          <span class="campo-moneda">
+            <span class="simbolo-moneda">$</span>
+            <input type="text" inputmode="numeric" class="miles" name="valor_presupuestado" required>
+          </span>
+        </label>
         <div class="fila-acciones-form">
           <button type="submit">💾 Guardar Convenio Nuevo</button>
           <button type="button" class="btn-limpiar-convenio">🧹 Limpiar</button>
@@ -301,6 +307,12 @@
         </label>
         <label>Duración (meses)
           <input type="text" inputmode="numeric" class="miles" name="duracion_meses">
+        </label>
+        <label class="campo-valor-presupuestado oculto">Precio Presupuestado
+          <span class="campo-moneda">
+            <span class="simbolo-moneda">$</span>
+            <input type="text" inputmode="numeric" class="miles" name="valor_presupuestado">
+          </span>
         </label>
         <div class="modal-acciones">
           <button type="button" id="btn-cancelar-editar-convenio" class="btn-cancelar">❌ Cancelar</button>
